@@ -11,6 +11,8 @@ All notable user-visible changes are recorded here. This project follows
   verification documentation.
 - Corrected the confirmation-token schema and policy examples to describe the
   implemented `text`, `close`, and `drag` contract.
+- Clarified the single-maintainer PR model and the public-issue-only support
+  channel.
 
 ### Security
 
@@ -23,6 +25,8 @@ All notable user-visible changes are recorded here. This project follows
 
 - Extended the supported Ruff range through 0.16 while explicitly preserving
   the established lint-rule baseline.
+- Enforced source-integrity and installed-package stdio handshake checks in
+  the Windows quality workflow.
 
 ## [0.1.4] - 2026-09-17
 

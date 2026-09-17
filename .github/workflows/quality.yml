@@ -2,7 +2,9 @@ name: Quality
 
 on:
   push:
+    branches: [master]
   pull_request:
+    branches: [master]
   workflow_dispatch:
 
 # The workflow only needs to read this repository.
@@ -36,13 +38,18 @@ jobs:
         run: python -m unittest discover -s tests -v
       - name: Compile source and tests
         run: python -m compileall -q src tests
+      - name: Verify source integrity manifest
+        run: python tools/compute_integrity_hash.py check
       - name: Build wheel
         run: python -m build --wheel
       - name: Verify installed wheel outside the checkout
         shell: pwsh
         run: |
-          python -m pip install --force-reinstall dist/*.whl
+          $wheels = @(Get-ChildItem -Path dist -Filter *.whl -File)
+          if ($wheels.Count -ne 1) { throw "Expected exactly one wheel, found $($wheels.Count)." }
+          python -m pip install --force-reinstall $wheels[0].FullName
           Push-Location $env:RUNNER_TEMP
           python -c "import desktop_automation_mcp; print(desktop_automation_mcp.__version__)"
           (Get-Command desktop-automation-mcp -ErrorAction Stop).Source
+          python $env:GITHUB_WORKSPACE/tools/verify_stdio_handshake.py
           Pop-Location
