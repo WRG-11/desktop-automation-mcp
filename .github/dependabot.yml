@@ -4,6 +4,11 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
+    ignore:
+      # The server imports the MCP 1.x FastMCP API. A major upgrade needs an
+      # explicit compatibility migration, not an automated manifest edit.
+      - dependency-name: "mcp"
+        update-types: ["version-update:semver-major"]
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
