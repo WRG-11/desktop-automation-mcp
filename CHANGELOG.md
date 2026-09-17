@@ -29,6 +29,8 @@ All notable user-visible changes are recorded here. This project follows
   the Windows quality workflow.
 - Added tag-to-version/changelog verification and GitHub build-provenance
   attestations for release distributions; package publication remains manual.
+- Added the explicit stdio transport and lifecycle compatibility contract, with
+  MCP tool-discovery coverage in the installed-package release gate.
 
 ## [0.1.4] - 2026-09-17
 

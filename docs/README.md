@@ -9,6 +9,8 @@
 - [Tool reference](reference/tools.md): the MCP tool families and their safety
   boundaries.
 - [Compatibility](reference/compatibility.md): supported platform baseline.
+- [Stdio transport](reference/transport.md): the local transport, lifecycle,
+  and compatibility boundary.
 - [Security model](explanation/security-model.md): why the server is
   window-scoped and fail-closed.
 - [Architecture](design/architecture-map.md): module responsibilities and the

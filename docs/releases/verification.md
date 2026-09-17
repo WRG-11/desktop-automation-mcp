@@ -4,7 +4,7 @@ Each release candidate must be merged through the protected `master` branch
 and pass the Windows quality workflow. That workflow enforces source linting,
 formatting, unit tests, source-integrity verification, wheel build, clean
 wheel installation/import outside the checkout, and a stdio MCP handshake
-against the installed console entry point.
+against the installed console entry point, including tool discovery.
 
 After those checks pass, create a version tag matching `pyproject.toml` and a
 GitHub Release whose notes match `CHANGELOG.md`. Do not tag a branch or a
