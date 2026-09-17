@@ -11,6 +11,8 @@
 - [Compatibility](reference/compatibility.md): supported platform baseline.
 - [Stdio transport](reference/transport.md): the local transport, lifecycle,
   and compatibility boundary.
+- [Confirmation contract](reference/confirmation.md): human approval boundary
+  and the single-use, target-bound token workflow.
 - [Security model](explanation/security-model.md): why the server is
   window-scoped and fail-closed.
 - [Architecture](design/architecture-map.md): module responsibilities and the

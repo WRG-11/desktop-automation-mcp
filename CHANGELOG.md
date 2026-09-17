@@ -16,6 +16,8 @@ All notable user-visible changes are recorded here. This project follows
 
 ### Security
 
+- Documented the human-approval boundary for confirmation tokens and added
+  regression coverage for action- and target-confusion attempts.
 - Added scheduled CodeQL scanning and Dependabot version updates for Python
   dependencies and GitHub Actions.
 - Configured Dependabot to hold MCP major-version updates for an explicit
