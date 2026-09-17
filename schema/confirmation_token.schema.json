@@ -1,8 +1,8 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://example.local/desktop-automation-mcp/schema/confirmation_token.schema.json",
-  "title": "Desktop Automation MCP confirmation token (Phase 3 design draft)",
-  "description": "Single-use, short-lived confirmation token for guarded actions (text, close). Not yet integrated; this is a Phase 3 design draft. NOTE: expires_at must be after issued_at (the lifetime cannot be negative/zero) and cannot be a past date; these cross-field and expiry checks cannot be expressed in JSON Schema, so they are performed by tools/validate_confirmation_token.py. NOTE: action_class is currently limited to text and close only; it will be extended when drag is added.",
+  "title": "Desktop Automation MCP confirmation token",
+  "description": "Single-use, short-lived confirmation token for guarded actions (text, close, drag). Runtime enforcement is implemented by the MCP server. NOTE: expires_at must be after issued_at (the lifetime cannot be negative/zero) and cannot be a past date; these cross-field and expiry checks cannot be expressed in JSON Schema, so they are performed by tools/validate_confirmation_token.py.",
   "type": "object",
   "required": ["token_id", "target_identity", "action_class", "issued_at", "expires_at", "single_use"],
   "properties": {
@@ -34,7 +34,7 @@
     "action_class": {
       "type": "string",
       "enum": ["text", "close", "drag"],
-      "description": "Confirmed guarded action class. NOTE: currently text and close only; will be extended when drag is added."
+      "description": "Confirmed guarded action class."
     },
     "issued_at": {
       "type": "string",

@@ -2,7 +2,7 @@
 #
 # Per README principle, `text` is a guarded class because it can modify
 # content and `close` because it is irreversible: even when allowed, they
-# alone are not enough; in Phase 3 they additionally require short-lived
+# alone are not enough; they additionally require short-lived
 # user confirmation. Here the protected_actions list makes this
 # classification concrete (protected_actions is a subset of allowed_actions).
 #

@@ -36,11 +36,9 @@ For setup, security boundaries, and contributor information, start with the
 
 ## Project layout
 
-The production package lives under [src/desktop_automation_mcp](src/desktop_automation_mcp).
-Regression tests are under [tests](tests), and the preserved one-off
-research scripts are under [experiments](experiments). The root
-[server.py](server.py) is only a compatibility wrapper so existing
-MCP registrations do not break.
+The production package lives under [src/desktop_automation_mcp](src/desktop_automation_mcp),
+and regression tests are under [tests](tests). The root [server.py](server.py)
+is a compatibility wrapper so existing MCP registrations do not break.
 
 For module responsibilities and the guarded action lifecycle, see the
 [architecture map](docs/design/architecture-map.md).
@@ -204,7 +202,7 @@ memory is limited by
 
 ## Development quality gate
 
-These four local commands are identical to the Windows quality gate in GitHub Actions:
+Run these local checks before opening a pull request:
 
 ```powershell
 py -3.12 -m ruff check src tests tools
@@ -214,8 +212,9 @@ py -3.12 -m compileall -q src tests tools
 ```
 
 The GitHub workflow [`.github/workflows/quality.yml`](.github/workflows/quality.yml)
-installs the package and development dependencies on a clean Windows runner with
-Python 3.12. This gate does not run real window automation; Windows UI smoke
+installs the package and development dependencies on clean Windows runners with
+Python 3.12, 3.13, and 3.14, then also builds and imports the wheel outside the
+checkout. This gate does not run real window automation; Windows UI smoke
 tests stay separate and operator-supervised. Chaos scenarios
 (`tests/test_chaos.py`) run the real `target.py`/`visibility.py`/`server.py`
 functions against shared fake Win32 state (`tests/fake_platform.py`);
@@ -539,7 +538,7 @@ field.
 ```python
 # 1. Find the permitted target window
 wins = list_windows()
-# 2. Pin the handle and take a focus-verified screenshot
+# 2. Pin the handle and take a policy-verified screenshot
 target = wins[0]["hwnd"]
 img = screenshot_window(hwnd=target, region_name="stage-800x600")
 # 3. Click the position inside the named region via the window-relative profile point

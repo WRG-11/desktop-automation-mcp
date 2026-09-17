@@ -33,7 +33,7 @@ policy-file-format counterpart stands as a working example in
 `schema/examples/notepad-text-policy.yaml`: `allowed_actions` contains only
 `observe, text, close`, and `text` and `close` are inside
 `protected_actions` there, meaning that even though permitted, they
-additionally require a short-lived user approval under the Phase 3 design.
+additionally require a short-lived, single-use confirmation token.
 Lesson: a content-changing action is not a natural extension of the
 observation permission; it is granted on a separate line, with separate
 consideration.

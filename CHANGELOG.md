@@ -9,8 +9,17 @@ All notable user-visible changes are recorded here. This project follows
 
 - Added public contribution, support, community, reference, and release-
   verification documentation.
+- Corrected the confirmation-token schema and policy examples to describe the
+  implemented `text`, `close`, and `drag` contract.
+
+### Security
+
+- Added scheduled CodeQL scanning and Dependabot version updates for Python
+  dependencies and GitHub Actions.
 
 ## [0.1.4] - 2026-09-17
+
+First public release.
 
 ### Added
 
@@ -22,14 +31,4 @@ All notable user-visible changes are recorded here. This project follows
 - Hardened bounded read, input-hold, policy, screenshot, and audit behaviour.
 - Improved target-resolution and input-validation diagnostics.
 
-## [0.1.3] - 2026-09-17
-
-### Added
-
-- Versioned coordinate profiles, policy-file configuration, confirmation
-  tokens, redacted audit events, rate limits, and Windows quality checks.
-
-### Security
-
-- Added deny-by-default target and action policy, target revalidation, and
-  region-limited screenshot controls.
+[0.1.4]: https://github.com/WRG-11/desktop-automation-mcp/releases/tag/v0.1.4

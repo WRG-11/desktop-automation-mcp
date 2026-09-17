@@ -2,7 +2,7 @@
 #
 # Both `text` AND `close` in `allowed_actions: [observe, text, close]`
 # are also in `protected_actions`: both writing and closing require a
-# short-lived, single-use confirmation token under the Phase 3 design.
+# short-lived, single-use confirmation token.
 # This is the "close confirmation" scenario itself.
 #
 # Consistency NOTE: the `action_class` enum (`text`, `close`) in
