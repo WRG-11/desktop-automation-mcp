@@ -19,5 +19,6 @@ New tools never inherit permission from an existing tool.
 
 Pointer tools move the shared operating-system cursor. Treat `hover`, click,
 scroll, and drag as visible operator-disrupting effects even when they do not
-change window content. Windows UAC, sign-in, and lock-screen UI hosts are
-always excluded; an allowlist cannot override that boundary.
+change window content. UAC, sign-in, and lock-screen UI are outside the
+supported target model: Windows desktop isolation plus the live target checks
+are the boundary; the server never bypasses them.

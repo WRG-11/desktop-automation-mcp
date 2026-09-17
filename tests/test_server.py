@@ -130,27 +130,6 @@ class TargetPolicyTests(unittest.TestCase):
         ):
             self.assertFalse(target._is_allowed_window("Ruffle player", 123))
 
-    def test_windows_security_boundary_hosts_are_denied_even_if_allowlisted(self):
-        for process_path in (
-            r"C:\Windows\System32\consent.exe",
-            r"C:\Windows\System32\LogonUI.exe",
-            r"C:\Windows\SystemApps\Microsoft.LockApp\LockApp.exe",
-        ):
-            with patch.object(
-                target,
-                "_process_path",
-                return_value=policy._normalise_process_path(process_path),
-            ):
-                with patch.object(
-                    target,
-                    "_allowed_process_paths",
-                    return_value={target._process_path(123)},
-                ):
-                    self.assertFalse(
-                        target._is_allowed_window("Windows security", 123),
-                        msg=process_path,
-                    )
-
     def test_actions_fail_closed_and_reject_unknown_names(self):
         with patch.dict(
             os.environ, {"DESKTOP_AUTOMATION_ALLOWED_ACTIONS": "observe"}, clear=False
