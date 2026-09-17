@@ -16,6 +16,8 @@ All notable user-visible changes are recorded here. This project follows
 
 - Added scheduled CodeQL scanning and Dependabot version updates for Python
   dependencies and GitHub Actions.
+- Configured Dependabot to hold MCP major-version updates for an explicit
+  compatibility migration, while continuing minor and patch coverage.
 
 ## [0.1.4] - 2026-09-17
 
