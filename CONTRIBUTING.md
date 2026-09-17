@@ -36,6 +36,12 @@ formatting and generated files out of a functional change. Changes that add or
 alter an MCP action must include tests for the denied path as well as the
 allowed path.
 
+`master` is protected: the Windows quality matrix and resolved review
+conversations are required before merge. This is currently a single-maintainer
+project, so an approving review is not required; the author remains
+responsible for completing the PR template and CI gates. A future multi-
+maintainer change should add `CODEOWNERS` and a required approving review.
+
 Every PR must state its policy, confirmation, audit, privacy, and documentation
 impact. Do not commit local policy files, real target paths, raw screenshots,
 audit events, dogfooding transcripts, credentials, or other machine-specific
