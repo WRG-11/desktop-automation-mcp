@@ -19,7 +19,7 @@ dependencies = [
     # 1.29.1, Pillow 12.3.0); prevents a silent fallback to an older/vulnerable version.
     # FastMCP is imported from the MCP 1.x API.  MCP 2 renamed this surface
     # and fails at import time, so a release must not resolve to it silently.
-    "mcp>=1.29.1,<2",
+    "mcp>=1.29.1,<3",
     "Pillow>=12.3",
 ]
 
