@@ -104,7 +104,11 @@ rationale per item:
 - **Automatically bypassing the login screen, the elevated UAC desktop, or
   the lock screen** — rationale: these screens draw the operating system's
   privilege boundary; automation crossing them means piercing the privilege
-  defense.
+  defense. The server does not bypass that boundary: it can act only on a
+  visible window on its own desktop after title, exact executable path,
+  foreground, and occlusion verification. If Windows refuses the process
+  identity query, target discovery fails closed. Disabling Windows' secure
+  desktop for elevation prompts weakens this OS boundary and is unsupported.
 - **General-purpose automation for password managers, MFA codes, payments,
   financial transactions, or social media posting** — rationale: these are
   irreversible actions or ones directly convertible to identity theft; a
