@@ -16,6 +16,8 @@ All notable user-visible changes are recorded here. This project follows
 
 ### Security
 
+- Denied Windows UAC, sign-in, and lock-screen UI hosts even when a policy
+  incorrectly allowlists their executable paths.
 - Documented the human-approval boundary for confirmation tokens and added
   regression coverage for action- and target-confusion attempts.
 - Added scheduled CodeQL scanning and Dependabot version updates for Python

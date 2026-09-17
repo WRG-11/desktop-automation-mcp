@@ -30,6 +30,21 @@ from .policy import (
 )
 
 
+# These binaries host Windows trust-boundary surfaces.  A policy is a grant
+# for an ordinary application, never an override for the lock screen or the
+# secure desktop.  Match by basename after normalisation so an alternate
+# Windows directory or drive spelling cannot turn the deny into an allow.
+_SECURITY_BOUNDARY_EXECUTABLES = frozenset(
+    {"consent.exe", "logonui.exe", "lockapp.exe"}
+)
+
+
+def _is_security_boundary_process_path(process_path: str) -> bool:
+    """Return whether a path names a Windows authentication/trust UI host."""
+    basename = process_path.replace("/", "\\").rsplit("\\", 1)[-1].casefold()
+    return basename in _SECURITY_BOUNDARY_EXECUTABLES
+
+
 def _user32():
     return get_win32_adapter().user32
 
@@ -127,7 +142,12 @@ def _window_class(hwnd: int) -> str:
 
 
 def _is_allowed_window(title: str, pid: int) -> bool:
-    return _is_allowed_title(title) and _process_path(pid) in _allowed_process_paths()
+    process_path = _process_path(pid)
+    return (
+        not _is_security_boundary_process_path(process_path)
+        and _is_allowed_title(title)
+        and process_path in _allowed_process_paths()
+    )
 
 
 def _enum_windows() -> list[TargetSnapshot]:

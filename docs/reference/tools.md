@@ -16,3 +16,8 @@ before execution.
 
 The complete parameter reference lives in the repository [README](../../README.md).
 New tools never inherit permission from an existing tool.
+
+Pointer tools move the shared operating-system cursor. Treat `hover`, click,
+scroll, and drag as visible operator-disrupting effects even when they do not
+change window content. Windows UAC, sign-in, and lock-screen UI hosts are
+always excluded; an allowlist cannot override that boundary.

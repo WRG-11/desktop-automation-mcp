@@ -104,7 +104,8 @@ rationale per item:
 - **Automatically bypassing the login screen, the elevated UAC desktop, or
   the lock screen** — rationale: these screens draw the operating system's
   privilege boundary; automation crossing them means piercing the privilege
-  defense.
+  defense. The server additionally refuses `consent.exe`, `LogonUI.exe`, and
+  `LockApp.exe` as targets even if a policy mistakenly allowlists their paths.
 - **General-purpose automation for password managers, MFA codes, payments,
   financial transactions, or social media posting** — rationale: these are
   irreversible actions or ones directly convertible to identity theft; a
