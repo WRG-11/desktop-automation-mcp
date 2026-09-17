@@ -27,6 +27,8 @@ All notable user-visible changes are recorded here. This project follows
   the established lint-rule baseline.
 - Enforced source-integrity and installed-package stdio handshake checks in
   the Windows quality workflow.
+- Added tag-to-version/changelog verification and GitHub build-provenance
+  attestations for release distributions; package publication remains manual.
 
 ## [0.1.4] - 2026-09-17
 
