@@ -1,4 +1,4 @@
-"""Phase 3 confirmation token schema tests (design draft).
+"""Confirmation token schema tests.
 
 Scope: tools/validate_confirmation_token.py + the example token under
 schema/examples. Does not touch tests/test_server.py or
@@ -35,7 +35,7 @@ def _stamp(days_from_now: float) -> str:
 
 def _base_token() -> dict:
     return {
-        "token_id": "9b2c4d6e-8f1a-4b3c-9d5e-6f7a8b9c0d1e",
+        "token_id": "00000000-0000-4000-8000-000000000000",
         "target_identity": {
             "hwnd": 65986,
             "pid": 12340,

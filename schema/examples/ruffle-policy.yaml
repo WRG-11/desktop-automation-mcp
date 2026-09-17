@@ -1,4 +1,4 @@
-# Ruffle policy — example of the Phase 3 policy file format.
+# Ruffle policy — example of the policy file format.
 #
 # Current environment-variable equivalent from the README:
 #   DESKTOP_AUTOMATION_ALLOWED_TITLES="*Ruffle*"
