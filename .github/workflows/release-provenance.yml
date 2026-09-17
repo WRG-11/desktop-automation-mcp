@@ -1,0 +1,47 @@
+name: Release provenance
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing version tag to build and attest
+        required: true
+        type: string
+
+# A tag builds attestable artifacts; it cannot publish a package or edit a release.
+permissions: {}
+
+jobs:
+  build-and-attest:
+    name: Build and attest release artifacts
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      attestations: write
+      id-token: write
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.tag || github.ref }}
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+      - name: Install build tooling
+        run: python -m pip install --upgrade pip build
+      - name: Verify tag, package version, and changelog agree
+        run: python tools/verify_release_metadata.py ${{ inputs.tag || github.ref_name }}
+      - name: Build source and wheel distributions
+        run: python -m build
+      - name: Generate build provenance attestation
+        uses: actions/attest@v4
+        with:
+          subject-path: "dist/*"
+      - name: Retain release distributions
+        uses: actions/upload-artifact@v4
+        with:
+          name: desktop-automation-mcp-${{ inputs.tag || github.ref_name }}
+          path: dist/*
+          if-no-files-found: error
