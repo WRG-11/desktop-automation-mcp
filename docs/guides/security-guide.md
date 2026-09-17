@@ -38,6 +38,10 @@ Lesson: a content-changing action is not a natural extension of the
 observation permission; it is granted on a separate line, with separate
 consideration.
 
+For the required human-approval boundary and exact client sequence, see the
+[confirmation contract](../reference/confirmation.md). A confirmation token
+is deliberately not a substitute for authenticated human approval.
+
 ### (c) Full interaction but `close`/`text` protected — Ruffle scenario
 
 Gameplay needs clicks and keyboard, but needs neither closing the window

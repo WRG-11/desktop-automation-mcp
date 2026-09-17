@@ -84,6 +84,18 @@ class IssueConsumeFlowTests(unittest.TestCase):
             store.consume(token["token_id"], _identity(), "close")
         self.assertIn("action class mismatch", str(ctx.exception))
 
+        # A rejected confused-deputy attempt must not consume the token, but
+        # its only remaining valid use is the original action and target.
+        self.assertIsNone(store.consume(token["token_id"], _identity(), "text"))
+
+    def test_token_cannot_cross_target_then_can_only_serve_original_target(self):
+        store = ConfirmationStore()
+        token = store.issue(_identity(), "close")
+        with self.assertRaises(PermissionError):
+            store.consume(token["token_id"], _identity(process_started_at=1), "close")
+
+        self.assertIsNone(store.consume(token["token_id"], _identity(), "close"))
+
     def test_unknown_token_id_is_rejected(self):
         store = ConfirmationStore()
         unknown_token = "00000000-0000-4000-8000-000000000000"
