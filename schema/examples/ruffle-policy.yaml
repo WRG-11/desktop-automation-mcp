@@ -1,0 +1,25 @@
+# Ruffle policy — example of the Phase 3 policy file format.
+#
+# Current environment-variable equivalent from the README:
+#   DESKTOP_AUTOMATION_ALLOWED_TITLES="*Ruffle*"
+#   DESKTOP_AUTOMATION_ALLOWED_PROCESS_PATHS="C:\Program Files\ruffle\bin\ruffle.exe"
+#   DESKTOP_AUTOMATION_ALLOWED_ACTIONS="observe,hover,click,key"
+#
+# The server reads this file live via DESKTOP_AUTOMATION_POLICY_FILE.
+# Validation: py -3.12 tools/validate_policy.py schema/examples/ruffle-policy.yaml
+
+application:
+  executable_path: "C:\\Program Files\\ruffle\\bin\\ruffle.exe"
+  title_patterns:
+    - "*Ruffle*"
+  allowed_actions:
+    - observe
+    - hover
+    - click
+    - key
+  safe_regions:
+    - name: "stage-800x600"
+      rect: [12, 40, 788, 588]
+  screenshot_masks:
+    - rect: [740, 40, 788, 88]
+  max_screenshot_bytes: 4194304

@@ -1,0 +1,60 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.local/desktop-automation-mcp/schema/confirmation_token.schema.json",
+  "title": "Desktop Automation MCP confirmation token (Phase 3 design draft)",
+  "description": "Single-use, short-lived confirmation token for guarded actions (text, close). Not yet integrated; this is a Phase 3 design draft. NOTE: expires_at must be after issued_at (the lifetime cannot be negative/zero) and cannot be a past date; these cross-field and expiry checks cannot be expressed in JSON Schema, so they are performed by tools/validate_confirmation_token.py. NOTE: action_class is currently limited to text and close only; it will be extended when drag is added.",
+  "type": "object",
+  "required": ["token_id", "target_identity", "action_class", "issued_at", "expires_at", "single_use"],
+  "properties": {
+    "token_id": {
+      "type": "string",
+      "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$",
+      "description": "Unique identity of the token, in UUID4 form."
+    },
+    "target_identity": {
+      "type": "object",
+      "description": "Target identity the confirmation is bound to; same meaning as the current TargetSnapshot triple (hwnd/pid/process-start-time). Invalid on any other target or on second use.",
+      "required": ["hwnd", "pid", "process_started_at"],
+      "additionalProperties": false,
+      "properties": {
+        "hwnd": {
+          "type": "integer",
+          "description": "Window handle of the target top-level window."
+        },
+        "pid": {
+          "type": "integer",
+          "description": "Process ID of the process owning the target window."
+        },
+        "process_started_at": {
+          "type": "integer",
+          "description": "Process start time (FILETIME-like); same meaning as the current TargetSnapshot.process_started_at. Guards against PID reuse."
+        }
+      }
+    },
+    "action_class": {
+      "type": "string",
+      "enum": ["text", "close", "drag"],
+      "description": "Confirmed guarded action class. NOTE: currently text and close only; will be extended when drag is added."
+    },
+    "issued_at": {
+      "type": "string",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}[T ]\\d{2}:\\d{2}(:\\d{2}(\\.\\d+)?)?[+-]\\d{2}:?\\d{2}$",
+      "description": "Moment the token was issued; ISO-8601 date-time with MANDATORY numeric UTC offset (same rule as the expires_at constraint in schema/policy.schema.json). Bare 'Z' or offset-less values are not accepted."
+    },
+    "expires_at": {
+      "type": "string",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}[T ]\\d{2}:\\d{2}(:\\d{2}(\\.\\d+)?)?[+-]\\d{2}:?\\d{2}$",
+      "description": "Moment the token expires; subject to the same offset rule as issued_at. NOTE: expires_at must be after issued_at and must not be a past date; tools/validate_confirmation_token.py rejects violations."
+    },
+    "single_use": {
+      "const": true,
+      "description": "Design decision: in this first version every token is single-use, no multi-use."
+    },
+    "consumed_at": {
+      "type": "string",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}[T ]\\d{2}:\\d{2}(:\\d{2}(\\.\\d+)?)?[+-]\\d{2}:?\\d{2}$",
+      "description": "Optional; filled when the token is consumed (a past date is normal since it is a consumption record, expiry rejection does not apply; but it cannot be before issued_at)."
+    }
+  },
+  "additionalProperties": false
+}

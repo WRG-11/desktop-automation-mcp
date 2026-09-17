@@ -1,0 +1,22 @@
+# Notepad text-stream policy — example of the "text and close are guarded classes" principle.
+#
+# Per README principle, `text` is a guarded class because it can modify
+# content and `close` because it is irreversible: even when allowed, they
+# alone are not enough; in Phase 3 they additionally require short-lived
+# user confirmation. Here the protected_actions list makes this
+# classification concrete (protected_actions is a subset of allowed_actions).
+#
+# The server reads this file live via DESKTOP_AUTOMATION_POLICY_FILE.
+# Validation: py -3.12 tools/validate_policy.py schema/examples/notepad-text-policy.yaml
+
+application:
+  executable_path: "C:\\Windows\\System32\\notepad.exe"
+  title_patterns:
+    - "*Notepad*"
+  allowed_actions:
+    - observe
+    - text
+    - close
+  protected_actions:
+    - text
+    - close

@@ -1,0 +1,14 @@
+{
+  "timestamp": "2026-09-14T12:04:37+03:00",
+  "correlation_id": "7a1e9f3c2b4d",
+  "policy_id": "notepad-text-policy/v1",
+  "action_type": "text",
+  "outcome": "denied",
+  "denial_reason": "target window is not in the foreground (passive focus gate); text was not sent because the operator did not bring the target to the front",
+  "duration_ms": 12,
+  "target_identity": {
+    "hwnd": 65980,
+    "pid": 9871,
+    "process_started_at": 134021200000000000
+  }
+}

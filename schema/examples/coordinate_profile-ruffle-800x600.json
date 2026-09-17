@@ -1,0 +1,31 @@
+{
+  "profile_id": "ruffle-800x600-v1",
+  "application": {
+    "process_path": "C:\\Program Files\\ruffle\\bin\\ruffle.exe"
+  },
+  "window_size": {
+    "width": 800,
+    "height": 600
+  },
+  "reference_region_name": "stage-800x600",
+  "reference_image_hash": "3e84c9b0ba339366e3df0b6ee9b95d531edbf9e56816cb77215d4d889e2246e6",
+  "safe_regions": [
+    {
+      "name": "stage-800x600",
+      "rect": [12, 40, 788, 588],
+      "description": "Same as the policy example, allowed stage area for hash verification"
+    },
+    {
+      "name": "sahne-merkez",
+      "rect": [330, 180, 470, 300],
+      "description": "Game stage center (example coordinates, synthetic)"
+    }
+  ],
+  "verification_points": [
+    {
+      "point": [400, 200],
+      "expected_color": [24, 24, 32]
+    }
+  ],
+  "created_at": "2026-09-14T12:00:00+03:00"
+}

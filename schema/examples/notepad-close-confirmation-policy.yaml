@@ -1,0 +1,25 @@
+# Notepad close-confirmation policy — fully guarded scenario.
+#
+# Both `text` AND `close` in `allowed_actions: [observe, text, close]`
+# are also in `protected_actions`: both writing and closing require a
+# short-lived, single-use confirmation token under the Phase 3 design.
+# This is the "close confirmation" scenario itself.
+#
+# Consistency NOTE: the `action_class` enum (`text`, `close`) in
+# schema/confirmation_token.schema.json is exactly the same as the guarded
+# actions in this file; a token can be produced only for these two classes.
+#
+# The server reads this file live via DESKTOP_AUTOMATION_POLICY_FILE.
+# Validation: py -3.12 tools/validate_policy.py schema/examples/notepad-close-confirmation-policy.yaml
+
+application:
+  executable_path: "C:\\Windows\\System32\\notepad.exe"
+  title_patterns:
+    - "*Notepad*"
+  allowed_actions:
+    - observe
+    - text
+    - close
+  protected_actions:
+    - text
+    - close

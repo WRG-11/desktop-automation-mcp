@@ -1,0 +1,94 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.local/desktop-automation-mcp/schema/audit_event.schema.json",
+  "title": "Desktop Automation MCP redacted audit event",
+  "description": "Redacted audit event produced by the running server for every guarded action (allowed, denied, or errored). NOTE: the record NEVER carries image, typed text, window title, or region name; target_identity deliberately contains only the hwnd/pid/process_started_at triple. Screenshot operations carry only content-free privacy_context counters. denial_reason is required for denied/error and forbidden for allowed.",
+  "type": "object",
+  "required": ["timestamp", "correlation_id", "policy_id", "action_type", "outcome", "duration_ms"],
+  "properties": {
+    "timestamp": {
+      "type": "string",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}[T ]\\d{2}:\\d{2}(:\\d{2}(\\.\\d+)?)?[+-]\\d{2}:?\\d{2}$",
+      "description": "Moment the event was produced; ISO-8601 date-time with MANDATORY numeric UTC offset (same rule as the other schemas). NOTE: an audit record is a retrospective observation; a past date is normal, expiry rejection does not apply."
+    },
+    "correlation_id": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{12}$",
+      "description": "Opaque 12-lowercase-hex-digit identity tracing the action call end to end. Exactly matches the running server's uuid4().hex[:12] output; it encodes neither content nor target identity."
+    },
+    "policy_id": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Opaque identity of the policy in effect at decision time (policy file version or environment-variable digest). This schema does not define HOW it is produced, only that it cannot be empty."
+    },
+    "action_type": {
+      "type": "string",
+      "enum": ["observe", "hover", "click", "text", "key", "close", "drag"],
+      "description": "The audited action; exactly matches the server's KNOWN_ACTIONS set, unknown action names are rejected."
+    },
+    "operation": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9_]{0,63}$",
+      "description": "Optional content-free tool/operation name (e.g. screenshot_window). Distinguishes different read kinds under action_type=observe."
+    },
+    "privacy_context": {
+      "type": "object",
+      "description": "Content-free privacy accounting for the screenshot family only. Carries no region name, title, text, hash, or pixel content.",
+      "additionalProperties": false,
+      "properties": {
+        "region_limited": {"type": "boolean"},
+        "mask_count": {"type": "integer", "minimum": 0},
+        "pixel_area": {"type": "integer", "minimum": 0},
+        "png_bytes": {"type": "integer", "minimum": 0}
+      }
+    },
+    "outcome": {
+      "type": "string",
+      "enum": ["allowed", "denied", "error"],
+      "description": "Action outcome: allowed (executed), denied (policy rejection), error (technical failure)."
+    },
+    "denial_reason": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Rejection/technical-error reason; contains no sensitive data (title, text, image summary). Required only when outcome is denied or error."
+    },
+    "duration_ms": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Time for the action to pass the policy gate, in milliseconds."
+    },
+    "target_identity": {
+      "type": "object",
+      "description": "Optional target identity (hwnd/pid/process-start-time). The audit schema carries no title; image, text, and title are never stored.",
+      "required": ["hwnd", "pid", "process_started_at"],
+      "additionalProperties": false,
+      "properties": {
+        "hwnd": {
+          "type": "integer",
+          "description": "Window handle of the target top-level window."
+        },
+        "pid": {
+          "type": "integer",
+          "description": "Process ID of the process owning the target window."
+        },
+        "process_started_at": {
+          "type": "integer",
+          "description": "Process start time (FILETIME-like); guards against PID reuse."
+        }
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "required": ["outcome"],
+        "properties": {
+          "outcome": { "enum": ["denied", "error"] }
+        }
+      },
+      "then": { "required": ["denial_reason"] },
+      "else": { "not": { "required": ["denial_reason"] } }
+    }
+  ],
+  "additionalProperties": false
+}

@@ -1,0 +1,5 @@
+* -text
+# The SHA-256 list deliberately uses two spaces in the "HASH__path" format.
+# Git's Windows checks can miscount that separator as trailing whitespace on
+# new hash lines, so it is disabled for this machine-readable file only.
+INTEGRITY.sha256 whitespace=-trailing-space

@@ -1,0 +1,38 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "desktop-automation-mcp"
+version = "0.1.4"
+description = "Deny-by-default, per-action-gated Windows window MCP server"
+readme = "README.md"
+license = "Apache-2.0"
+requires-python = ">=3.12"
+classifiers = [
+    "Operating System :: Microsoft :: Windows",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
+dependencies = [
+    # The lower bounds are versions locally verified on 2026-09-15 (mcp
+    # 1.29.1, Pillow 12.3.0); prevents a silent fallback to an older/vulnerable version.
+    # FastMCP is imported from the MCP 1.x API.  MCP 2 renamed this surface
+    # and fails at import time, so a release must not resolve to it silently.
+    "mcp>=1.29.1,<2",
+    "Pillow>=12.3",
+]
+
+[project.optional-dependencies]
+dev = [
+    "ruff>=0.15.5,<0.16",
+]
+
+[project.scripts]
+desktop-automation-mcp = "desktop_automation_mcp.server:main"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]

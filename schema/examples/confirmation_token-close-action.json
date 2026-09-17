@@ -1,0 +1,12 @@
+{
+  "token_id": "9b2c4d6e-8f1a-4b3c-9d5e-6f7a8b9c0d1e",
+  "target_identity": {
+    "hwnd": 65986,
+    "pid": 12340,
+    "process_started_at": 134021234567890000
+  },
+  "action_class": "close",
+  "issued_at": "2026-09-14T12:00:00+03:00",
+  "expires_at": "2035-01-01T00:00:00+03:00",
+  "single_use": true
+}

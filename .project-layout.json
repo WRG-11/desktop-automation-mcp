@@ -1,0 +1,26 @@
+{
+  "schema": 1,
+  "project": "desktop-automation-mcp",
+  "root_files": [
+    ".gitattributes",
+    ".gitignore",
+    ".project-layout.json",
+    "CHANGELOG.md",
+    "INTEGRITY.sha256",
+    "pyproject.toml",
+    "README.md",
+    "CONTRIBUTING.md",
+    "CODE_OF_CONDUCT.md",
+    "SUPPORT.md",
+    "server.py"
+  ],
+  "root_directories": [
+    ".github",
+    "docs",
+    "experiments",
+    "schema",
+    "src",
+    "tests",
+    "tools"
+  ]
+}

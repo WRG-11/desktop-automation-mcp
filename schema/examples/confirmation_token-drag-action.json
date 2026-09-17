@@ -1,0 +1,12 @@
+{
+  "token_id": "c7d2e5a1-3b4f-4c8d-9e6a-1f2b3c4d5e6f",
+  "target_identity": {
+    "hwnd": 65987,
+    "pid": 12341,
+    "process_started_at": 134021234567890000
+  },
+  "action_class": "drag",
+  "issued_at": "2026-09-14T12:00:00+03:00",
+  "expires_at": "2035-01-01T00:00:00+03:00",
+  "single_use": true
+}

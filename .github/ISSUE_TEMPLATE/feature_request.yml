@@ -1,0 +1,24 @@
+name: Feature request
+description: Suggest a capability or documentation improvement.
+title: "feature: "
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem to solve
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed approach and alternatives
+    validations:
+      required: true
+  - type: textarea
+    id: security
+    attributes:
+      label: Security and privacy impact
+      description: Explain how this affects target scope, permissions, confirmation, audit, or disclosure.
+    validations:
+      required: true

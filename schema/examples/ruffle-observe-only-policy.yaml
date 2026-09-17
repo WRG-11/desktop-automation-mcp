@@ -1,0 +1,22 @@
+# Ruffle observe-only policy — the narrowest example.
+#
+# Only `observe` is allowed: the client can list windows; because no
+# safe_regions are defined, screenshots are rejected fail-closed. It cannot
+# move the mouse, press keys, type text, or close windows. Since the shared
+# cursor never moves, there is also no risk of interrupting the operator's work.
+#
+# NOTE — the `protected_actions` field is DELIBERATELY ABSENT (NOT an empty `[]` list):
+# schema/policy.schema.json places a `minItems: 1` constraint on
+# `protected_actions`, so an empty list violates the schema. When no action
+# remains to guard, the correct expression is not "an empty guarded list" but
+# the absence of the field: if there is nothing to guard, there is no guarded class either.
+#
+# The server reads this file live via DESKTOP_AUTOMATION_POLICY_FILE.
+# Validation: py -3.12 tools/validate_policy.py schema/examples/ruffle-observe-only-policy.yaml
+
+application:
+  executable_path: "C:\\Program Files\\ruffle\\bin\\ruffle.exe"
+  title_patterns:
+    - "*Ruffle*"
+  allowed_actions:
+    - observe

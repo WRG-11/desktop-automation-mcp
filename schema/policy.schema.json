@@ -1,0 +1,99 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.local/desktop-automation-mcp/schema/policy.schema.json",
+  "title": "Desktop Automation MCP application policy",
+  "description": "Version-controlled policy format the server reads live via DESKTOP_AUTOMATION_POLICY_FILE. NOTE: protected_actions must be a subset of the allowed_actions set; this cross-field constraint is checked by policy_file.py. NOTE: expires_at must contain a numeric UTC offset (e.g. +03:00); bare 'Z' or offset-less date-time is invalid.",
+  "type": "object",
+  "required": ["application"],
+  "properties": {
+    "application": {
+      "type": "object",
+      "description": "Permission record for a single Windows application.",
+      "required": ["executable_path", "title_patterns", "allowed_actions"],
+      "additionalProperties": false,
+      "properties": {
+        "executable_path": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Allowed full executable file path (e.g. C:\\Program Files\\ruffle\\bin\\ruffle.exe). Cannot be empty."
+        },
+        "title_patterns": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "description": "Case-insensitive title glob patterns; at least one pattern is required (e.g. *Ruffle*)."
+        },
+        "allowed_actions": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "enum": ["observe", "hover", "click", "text", "key", "close", "drag"]
+          },
+          "description": "Actions explicitly allowed for this application. Exactly matches the server's KNOWN_ACTIONS set; unknown action names are rejected."
+        },
+        "protected_actions": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "enum": ["observe", "hover", "click", "text", "key", "close", "drag"]
+          },
+          "description": "NOTE: drawn from the same enum as allowed_actions and must logically be a subset of allowed_actions. If the two conflict (the protected list contains an action not in the allowed list) the policy counts as invalid; this cross-validation is performed by tools/validate_policy.py."
+        },
+        "safe_regions": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["name", "rect"],
+            "additionalProperties": false,
+            "properties": {
+              "name": {"type": "string", "minLength": 1},
+              "rect": {
+                "type": "array",
+                "minItems": 4,
+                "maxItems": 4,
+                "items": {"type": "integer", "minimum": 0}
+              }
+            }
+          },
+          "description": "Optional named screenshot permission regions. rect is a window-relative [left, top, right, bottom] coordinate; values are therefore zero or positive. A negative screen/monitor origin belongs to the P2 multi-monitor matrix and is never carried into the window-relative rect. Names must be unique at runtime validation."
+        },
+        "screenshot_masks": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["rect"],
+            "additionalProperties": false,
+            "properties": {
+              "rect": {
+                "type": "array",
+                "minItems": 4,
+                "maxItems": 4,
+                "items": {"type": "integer", "minimum": 0}
+              }
+            }
+          },
+          "description": "Optional fixed mask rectangles. rect is a window-relative [left, top, right, bottom] coordinate and therefore cannot be negative; the portion intersecting the captured area is painted black."
+        },
+        "max_screenshot_bytes": {
+          "type": "integer",
+          "minimum": 1024,
+          "maximum": 16777216,
+          "description": "Upper byte limit for a single PNG response; 1 KiB..16 MiB."
+        },
+        "expires_at": {
+          "type": "string",
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}[T ]\\d{2}:\\d{2}(:\\d{2}(\\.\\d+)?)?[+-]\\d{2}:?\\d{2}$",
+          "description": "Optional expiry; ISO-8601 date-time with MANDATORY numeric UTC offset (e.g. 2027-01-01T00:00:00+03:00). Bare 'Z' or offset-less values are not accepted. An expired policy is rejected."
+        }
+      }
+    }
+  },
+  "additionalProperties": false
+}
