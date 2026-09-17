@@ -19,6 +19,11 @@ All notable user-visible changes are recorded here. This project follows
 - Configured Dependabot to hold MCP major-version updates for an explicit
   compatibility migration, while continuing minor and patch coverage.
 
+### Development
+
+- Extended the supported Ruff range through 0.16 while explicitly preserving
+  the established lint-rule baseline.
+
 ## [0.1.4] - 2026-09-17
 
 First public release.
