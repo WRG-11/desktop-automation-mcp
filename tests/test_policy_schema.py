@@ -164,7 +164,7 @@ class PolicyCrossFieldTests(unittest.TestCase):
 
     def test_missing_file_is_probe_error_not_invalid(self):
         with self.assertRaises(validate_policy.PolicyFileError) as ctx:
-            validate_policy.load_policy(REPO_ROOT / "schema" / "yok.yaml")
+            validate_policy.load_policy(REPO_ROOT / "schema" / "missing.yaml")
         self.assertIn("not found", str(ctx.exception))
 
     def test_broken_file_is_probe_error_with_exit_two(self):

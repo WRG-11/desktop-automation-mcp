@@ -6,8 +6,10 @@
   environment settings to a version-controlled policy file.
 - [Security guide](guides/security-guide.md): choose narrow target and action
   permissions.
-- [Tool reference](reference/tools.md): the MCP tool families and their safety
-  boundaries.
+- [Configuration reference](reference/configuration.md): every setting that
+  grants or limits authority, plus rate, memory and input limits.
+- [Tool reference](reference/tools.md): every MCP tool, its parameters and its
+  safety boundaries.
 - [Compatibility](reference/compatibility.md): supported platform baseline.
 - [Stdio transport](reference/transport.md): the local transport, lifecycle,
   and compatibility boundary.

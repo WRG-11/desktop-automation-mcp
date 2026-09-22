@@ -653,14 +653,30 @@ def load_policy_file(path: str) -> dict:
     missing env var does today. Raises OSError if the file cannot be read
     at all (broken-probe != absence: if the file cannot be read, do not
     confuse that with "invalid").
+
+    Every error raised here reaches the MCP client through the ordinary
+    policy-denial path, and the configured path usually sits under a user
+    profile. So these messages name only the file, never its directory, and
+    a parse error does not quote the file's lines either (they can carry an
+    executable path). The chained cause is dropped for the same reason. The
+    operator-facing detail stays available from `tools/validate_policy.py`,
+    which calls `read_policy_document` directly.
     """
+    label = Path(path).name or "configured policy file"
     try:
         doc = read_policy_document(path)
-    except PolicyParseError as exc:
-        raise PolicyDeniedError(f"could not parse policy file ({path}): {exc}") from exc
+    except PolicyParseError:
+        raise PolicyDeniedError(
+            f"could not parse policy file ({label}); run "
+            "tools/validate_policy.py on it for details"
+        ) from None
+    except FileNotFoundError:
+        raise FileNotFoundError(f"policy file not found ({label})") from None
+    except OSError:
+        raise OSError(f"could not read policy file ({label})") from None
     problems = validate_policy_document(doc)
     if problems:
         raise PolicyDeniedError(
-            f"policy file is invalid ({path}): " + "; ".join(problems)
+            f"policy file is invalid ({label}): " + "; ".join(problems)
         )
     return doc
