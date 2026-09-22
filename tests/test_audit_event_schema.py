@@ -171,7 +171,7 @@ class AuditEventRuleTests(unittest.TestCase):
 
     def test_missing_file_is_probe_error_not_invalid(self):
         with self.assertRaises(validate_event.AuditFileError) as ctx:
-            validate_event.load_event(REPO_ROOT / "schema" / "yok.json")
+            validate_event.load_event(REPO_ROOT / "schema" / "missing.json")
         self.assertIn("not found", str(ctx.exception))
 
     def test_invalid_event_cli_exits_one_with_rule_message(self):

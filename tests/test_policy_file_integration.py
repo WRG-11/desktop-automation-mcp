@@ -246,7 +246,7 @@ class PolicyFileIntegrationTests(unittest.TestCase):
             )
 
     def test_missing_file_raises_oserror_not_permission_error(self):
-        missing = str(Path(self._tmp.name) / "yok.yaml")
+        missing = str(Path(self._tmp.name) / "missing.yaml")
         with _env_patch(DESKTOP_AUTOMATION_POLICY_FILE=missing):
             with self.assertRaises(OSError) as ctx:
                 policy._allowed_title_patterns()
@@ -307,6 +307,84 @@ class PolicyFileIntegrationTests(unittest.TestCase):
             self.assertEqual(policy._focus_mode(), "activate")
         with _env_patch(DESKTOP_AUTOMATION_POLICY_FILE=path):
             self.assertEqual(policy._focus_mode(), "passive")
+
+
+class PolicyPathRedactionTests(unittest.TestCase):
+    """Policy errors that reach an MCP client must not disclose the host layout.
+
+    The configured `DESKTOP_AUTOMATION_POLICY_FILE` value usually sits under a
+    user profile (`C:\\Users\\<name>\\...`). Every server-side policy error
+    travels to the MCP client, so the directory part must never appear in it,
+    and neither may the raw file lines a parse error would otherwise quote.
+    The operator-facing CLI (`tools/validate_policy.py`) keeps full detail.
+    """
+
+    MARKER = "operator-profile-marker"
+    EXECUTABLE_LINE = r"D:\Tools\example-app\target.exe"
+
+    def setUp(self):
+        self._tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self._tmp.cleanup)
+        self._dir = Path(self._tmp.name) / self.MARKER
+        self._dir.mkdir()
+
+    def _write(self, name, text):
+        path = self._dir / name
+        path.write_text(text, encoding="utf-8")
+        return str(path)
+
+    def _assert_redacted(self, exc, filename):
+        message = str(exc)
+        self.assertNotIn(self.MARKER, message, "directory part leaked")
+        self.assertNotIn(str(self._dir), message, "full path leaked")
+        self.assertIn(filename, message, "file name is needed for diagnosis")
+        self.assertIsNone(exc.__cause__, "chained cause would carry the path")
+        self.assertTrue(
+            exc.__context__ is None or exc.__suppress_context__,
+            "an unsuppressed context would carry the path",
+        )
+
+    def test_missing_file_error_names_only_the_file(self):
+        missing = str(self._dir / "missing-policy.yaml")
+        with _env_patch(DESKTOP_AUTOMATION_POLICY_FILE=missing):
+            with self.assertRaises(FileNotFoundError) as ctx:
+                policy._allowed_actions()
+        self._assert_redacted(ctx.exception, "missing-policy.yaml")
+
+    def test_directory_path_error_does_not_echo_the_path(self):
+        target = self._dir / "policy-dir"
+        target.mkdir()
+        with _env_patch(DESKTOP_AUTOMATION_POLICY_FILE=str(target)):
+            with self.assertRaises(OSError) as ctx:
+                policy._allowed_actions()
+        self.assertNotIsInstance(ctx.exception, PermissionError)
+        self._assert_redacted(ctx.exception, "policy-dir")
+
+    def test_parse_error_quotes_neither_path_nor_file_lines(self):
+        path = self._write(
+            "broken.yaml",
+            f"application:\n  executable_path: {self.EXECUTABLE_LINE}\n  : : :\n",
+        )
+        with _env_patch(DESKTOP_AUTOMATION_POLICY_FILE=path):
+            with self.assertRaises(errors.PolicyDeniedError) as ctx:
+                policy._allowed_actions()
+        self._assert_redacted(ctx.exception, "broken.yaml")
+        self.assertNotIn("target.exe", str(ctx.exception), "file content leaked")
+        self.assertIn("validate_policy.py", str(ctx.exception))
+
+    def test_invalid_policy_error_names_only_the_file(self):
+        path = self._write("invalid.yaml", "application:\n  title_patterns: []\n")
+        with _env_patch(DESKTOP_AUTOMATION_POLICY_FILE=path):
+            with self.assertRaises(errors.PolicyDeniedError) as ctx:
+                policy._allowed_actions()
+        self._assert_redacted(ctx.exception, "invalid.yaml")
+        self.assertIn("executable_path", str(ctx.exception), "problems still listed")
+
+    def test_control_the_cli_reader_keeps_full_detail_for_the_operator(self):
+        path = self._write("empty.yaml", "   \n")
+        with self.assertRaises(policy_file.PolicyParseError) as ctx:
+            policy_file.read_policy_document(path)
+        self.assertIn(path, str(ctx.exception), "the CLI path must stay verbose")
 
 
 if __name__ == "__main__":

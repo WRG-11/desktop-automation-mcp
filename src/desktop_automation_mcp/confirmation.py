@@ -255,39 +255,28 @@ class ConfirmationStore:
     def preview(
         self, action_class: str, target_identity: dict, extra_protected=None
     ) -> dict:
-        """Side-effect-free summary: policy outcome + live token if any.
+        """Side-effect-free summary: policy outcome + whether a live token exists.
 
-        Produces/consumes/deletes nothing; writes nothing to the store. If
-        several live tokens exist, the one with the latest expiry is
-        reported (deterministic rule). For an unknown action class returns
+        Produces/consumes/deletes nothing; writes nothing to the store. The
+        token value, its expiry and the target identity are NEVER returned:
+        a read-only preview must not become a second way to obtain an
+        approval token, which only `issue()` (via `request_confirmation`)
+        hands out. For an unknown action class returns
         `requires_confirmation=False` and does NOT raise (read-only
         information, grants nothing).
         """
         with self._lock:
-            live = [
-                record
-                for record in self._tokens.values()
-                if "consumed_at" not in record
+            has_live_token = any(
+                "consumed_at" not in record
                 and not is_past(parse_offset_aware(record["expires_at"]))
                 and record["action_class"] == action_class
                 and record["target_identity"] == target_identity
-            ]
-        chosen = (
-            max(live, key=lambda r: parse_offset_aware(r["expires_at"]))
-            if live
-            else None
-        )
-        echo = (
-            dict(target_identity)
-            if isinstance(target_identity, dict)
-            else target_identity
-        )
+                for record in self._tokens.values()
+            )
         return {
             "action_class": action_class,
-            "target_identity": echo,
             "requires_confirmation": is_protected_action(action_class, extra_protected),
-            "token_id": chosen["token_id"] if chosen is not None else None,
-            "token_expires_at": chosen["expires_at"] if chosen is not None else None,
+            "has_live_token": has_live_token,
         }
 
     def purge_expired(self) -> int:

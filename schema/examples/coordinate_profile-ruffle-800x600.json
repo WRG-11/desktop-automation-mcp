@@ -16,7 +16,7 @@
       "description": "Same as the policy example, allowed stage area for hash verification"
     },
     {
-      "name": "sahne-merkez",
+      "name": "stage-center",
       "rect": [330, 180, 470, 300],
       "description": "Game stage center (example coordinates, synthetic)"
     }

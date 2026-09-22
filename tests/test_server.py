@@ -151,6 +151,285 @@ class TargetPolicyTests(unittest.TestCase):
                 policy._require_action(policy.ACTION_OBSERVE)
             with self.assertRaises(PermissionError):
                 server.list_windows()
+            with self.assertRaises(PermissionError):
+                server.policy_visibility_summary()
+
+    def test_policy_visibility_summary_returns_only_redacted_counts(self):
+        with patch.object(
+            target,
+            "policy_visibility_summary",
+            return_value={
+                "allowed_visible_window_count": 0,
+                "visible_title_match_count": 1,
+                "process_path_mismatch_count": 1,
+                "process_identity_unreadable_count": 0,
+            },
+        ):
+            summary = server.policy_visibility_summary()
+        self.assertEqual(
+            summary,
+            {
+                "allowed_visible_window_count": 0,
+                "visible_title_match_count": 1,
+                "process_path_mismatch_count": 1,
+                "process_identity_unreadable_count": 0,
+                "limitations": [
+                    "Only aggregate counts for allowed title patterns are returned.",
+                    "This does not enumerate unallowed windows or expose target identity.",
+                ],
+            },
+        )
+        self.assertTrue({"title", "process_path", "hwnd", "pid"}.isdisjoint(summary))
+
+    def test_policy_visibility_summary_has_no_action_lifecycle_side_effects(self):
+        with (
+            patch.object(
+                target,
+                "policy_visibility_summary",
+                return_value={
+                    "allowed_visible_window_count": 0,
+                    "visible_title_match_count": 0,
+                    "process_path_mismatch_count": 0,
+                    "process_identity_unreadable_count": 0,
+                },
+            ),
+            patch.object(server, "_execute_guarded_action") as guarded_action,
+            patch.object(server, "_focus_and_verify") as focus_and_verify,
+            patch.object(server, "issue_confirmation") as issue,
+            patch.object(server, "consume_confirmation") as consume,
+            patch.object(server, "_safe_record_audit_event") as record_audit,
+            patch.object(server, "_send_unicode_text") as send_text,
+            patch.object(server, "_send_vk") as send_key,
+        ):
+            server.policy_visibility_summary()
+        for side_effect in (
+            guarded_action,
+            focus_and_verify,
+            issue,
+            consume,
+            record_audit,
+            send_text,
+            send_key,
+        ):
+            side_effect.assert_not_called()
+
+    def test_policy_visibility_summary_counts_a_title_match_with_wrong_process(self):
+        api = MagicMock()
+        api.IsWindowVisible.return_value = True
+        api.IsIconic.return_value = False
+        api.GetWindowTextLengthW.return_value = len("Ruffle player")
+
+        def set_title(_hwnd, buffer, _length):
+            buffer.value = "Ruffle player"
+            return len(buffer.value)
+
+        def set_pid(_hwnd, pid):
+            pid._obj.value = 7
+            return 1
+
+        def enumerate_windows(callback, _lparam):
+            callback(42, 0)
+            return 1
+
+        api.GetWindowTextW.side_effect = set_title
+        api.GetWindowThreadProcessId.side_effect = set_pid
+        api.EnumWindows.side_effect = enumerate_windows
+        with (
+            patch.object(target, "_user32", return_value=api),
+            patch.object(target, "_process_path", return_value=r"c:\other\app.exe"),
+            patch.object(target, "_process_started_at", return_value=1),
+        ):
+            summary = target.policy_visibility_summary()
+        self.assertEqual(0, summary["allowed_visible_window_count"])
+        self.assertEqual(1, summary["visible_title_match_count"])
+        self.assertEqual(1, summary["process_path_mismatch_count"])
+        self.assertEqual(0, summary["process_identity_unreadable_count"])
+        self.assertNotIn("Ruffle player", str(summary))
+        self.assertNotIn("c:\\other\\app.exe", str(summary))
+
+    def test_policy_visibility_summary_counts_unreadable_process_identity(self):
+        api = MagicMock()
+        api.IsWindowVisible.return_value = True
+        api.IsIconic.return_value = False
+        api.GetWindowTextLengthW.return_value = len("Ruffle player")
+
+        def set_title(_hwnd, buffer, _length):
+            buffer.value = "Ruffle player"
+            return len(buffer.value)
+
+        def set_pid(_hwnd, pid):
+            pid._obj.value = 7
+            return 1
+
+        def enumerate_windows(callback, _lparam):
+            callback(42, 0)
+            return 1
+
+        api.GetWindowTextW.side_effect = set_title
+        api.GetWindowThreadProcessId.side_effect = set_pid
+        api.EnumWindows.side_effect = enumerate_windows
+        with (
+            patch.object(target, "_user32", return_value=api),
+            patch.object(
+                target, "_process_path", side_effect=PermissionError("private")
+            ),
+        ):
+            summary = target.policy_visibility_summary()
+        self.assertEqual(0, summary["allowed_visible_window_count"])
+        self.assertEqual(1, summary["visible_title_match_count"])
+        self.assertEqual(0, summary["process_path_mismatch_count"])
+        self.assertEqual(1, summary["process_identity_unreadable_count"])
+        self.assertNotIn("private", str(summary))
+
+    def test_policy_visibility_summary_ignores_nonmatching_titles(self):
+        api = MagicMock()
+        api.IsWindowVisible.return_value = True
+        api.IsIconic.return_value = False
+        api.GetWindowTextLengthW.return_value = len("Unrelated application")
+
+        def set_title(_hwnd, buffer, _length):
+            buffer.value = "Unrelated application"
+            return len(buffer.value)
+
+        def enumerate_windows(callback, _lparam):
+            callback(42, 0)
+            return 1
+
+        api.GetWindowTextW.side_effect = set_title
+        api.EnumWindows.side_effect = enumerate_windows
+        with (
+            patch.object(target, "_user32", return_value=api),
+            patch.object(target, "_process_path") as process_path,
+        ):
+            summary = target.policy_visibility_summary()
+        self.assertEqual(
+            {
+                "allowed_visible_window_count": 0,
+                "visible_title_match_count": 0,
+                "process_path_mismatch_count": 0,
+                "process_identity_unreadable_count": 0,
+            },
+            summary,
+        )
+        process_path.assert_not_called()
+        self.assertNotIn("Unrelated application", str(summary))
+
+    def test_policy_visibility_summary_skips_a_failed_title_read(self):
+        api = MagicMock()
+        api.IsWindowVisible.return_value = True
+        api.IsIconic.return_value = False
+        api.GetWindowTextLengthW.return_value = len("Ruffle player")
+        api.GetWindowTextW.return_value = 0
+
+        def enumerate_windows(callback, _lparam):
+            callback(42, 0)
+            return 1
+
+        api.EnumWindows.side_effect = enumerate_windows
+        with (
+            patch.object(target, "_user32", return_value=api),
+            patch.object(target, "_process_path") as process_path,
+        ):
+            summary = target.policy_visibility_summary()
+        self.assertEqual(
+            {
+                "allowed_visible_window_count": 0,
+                "visible_title_match_count": 0,
+                "process_path_mismatch_count": 0,
+                "process_identity_unreadable_count": 0,
+            },
+            summary,
+        )
+        process_path.assert_not_called()
+
+    def test_policy_visibility_summary_counts_missing_pid_as_unreadable(self):
+        api = MagicMock()
+        api.IsWindowVisible.return_value = True
+        api.IsIconic.return_value = False
+        api.GetWindowTextLengthW.return_value = len("Ruffle player")
+        api.GetWindowThreadProcessId.return_value = 0
+
+        def set_title(_hwnd, buffer, _length):
+            buffer.value = "Ruffle player"
+            return len(buffer.value)
+
+        def enumerate_windows(callback, _lparam):
+            callback(42, 0)
+            return 1
+
+        api.GetWindowTextW.side_effect = set_title
+        api.EnumWindows.side_effect = enumerate_windows
+        with (
+            patch.object(target, "_user32", return_value=api),
+            patch.object(target, "_process_path") as process_path,
+        ):
+            summary = target.policy_visibility_summary()
+        self.assertEqual(1, summary["visible_title_match_count"])
+        self.assertEqual(1, summary["process_identity_unreadable_count"])
+        self.assertEqual(0, summary["allowed_visible_window_count"])
+        process_path.assert_not_called()
+
+    def test_policy_visibility_summary_fails_closed_when_enumeration_fails(self):
+        api = MagicMock()
+        api.EnumWindows.return_value = 0
+        with patch.object(target, "_user32", return_value=api):
+            with self.assertRaisesRegex(
+                errors.PlatformError, "Could not list open windows"
+            ):
+                target.policy_visibility_summary()
+
+    def test_policy_visibility_summary_aggregates_mixed_outcomes(self):
+        api = MagicMock()
+        api.IsWindowVisible.return_value = True
+        api.IsIconic.return_value = False
+        titles = {
+            41: "Ruffle allowed",
+            42: "Ruffle wrong process",
+            43: "Ruffle unreadable",
+        }
+        pids = {41: 1, 42: 2, 43: 3}
+        api.GetWindowTextLengthW.side_effect = lambda hwnd: len(titles[hwnd])
+
+        def set_title(hwnd, buffer, _length):
+            buffer.value = titles[hwnd]
+            return len(buffer.value)
+
+        def set_pid(hwnd, pid):
+            pid._obj.value = pids[hwnd]
+            return 1
+
+        def enumerate_windows(callback, _lparam):
+            for hwnd in titles:
+                callback(hwnd, 0)
+            return 1
+
+        def process_path(pid):
+            if pid == 3:
+                raise PermissionError("private")
+            if pid == 2:
+                return policy._normalise_process_path(r"C:\\Temp\\ruffle.exe")
+            return policy._normalise_process_path(
+                r"C:\\Program Files\\ruffle\\bin\\ruffle.exe"
+            )
+
+        api.GetWindowTextW.side_effect = set_title
+        api.GetWindowThreadProcessId.side_effect = set_pid
+        api.EnumWindows.side_effect = enumerate_windows
+        with (
+            patch.object(target, "_user32", return_value=api),
+            patch.object(target, "_process_path", side_effect=process_path),
+            patch.object(target, "_process_started_at", return_value=1),
+        ):
+            summary = target.policy_visibility_summary()
+        self.assertEqual(
+            {
+                "allowed_visible_window_count": 1,
+                "visible_title_match_count": 3,
+                "process_path_mismatch_count": 1,
+                "process_identity_unreadable_count": 1,
+            },
+            summary,
+        )
 
     def test_handle_resolution_requires_current_allowed_window(self):
         windows = [_target()]
@@ -683,6 +962,26 @@ class PerformanceBudgetTests(unittest.TestCase):
             self.assertEqual(server.list_windows(), [])
         self.assertIn("window listing", fake_err.getvalue())
 
+    def test_slow_policy_visibility_summary_is_observed_but_still_returned(self):
+        with (
+            patch.dict(os.environ, {"DESKTOP_AUTOMATION_ALLOWED_ACTIONS": "observe"}),
+            patch.object(server, "BUDGET_LIST_WINDOWS_MS", 0),
+            patch.object(
+                target,
+                "policy_visibility_summary",
+                return_value={
+                    "allowed_visible_window_count": 0,
+                    "visible_title_match_count": 0,
+                    "process_path_mismatch_count": 0,
+                    "process_identity_unreadable_count": 0,
+                },
+            ),
+            patch.object(server.time, "perf_counter", side_effect=[1.0, 1.01]),
+            patch("sys.stderr", new_callable=io.StringIO) as fake_err,
+        ):
+            server.policy_visibility_summary()
+        self.assertIn("policy visibility summary", fake_err.getvalue())
+
     def test_screenshot_memory_budget_env_reader_accepts_bounds_and_falls_back(self):
         name = "DESKTOP_AUTOMATION_SCREENSHOT_MEMORY_BUDGET_BYTES"
         with patch.dict(os.environ, {name: "1048576"}, clear=False):
@@ -842,7 +1141,7 @@ class FocusModeOptInTests(unittest.TestCase):
 
 
 class MouseActionTests(unittest.TestCase):
-    """Faz 1: double_click/right_click/scroll/drag, hepsi guaranteed-release."""
+    """Phase 1: double_click/right_click/scroll/drag all guarantee button release."""
 
     def setUp(self):
         self.actions = patch.dict(
@@ -2001,6 +2300,15 @@ class WindowStateDiagnosticsTests(unittest.TestCase):
         with patch.object(server, "_current_window_snapshot", return_value=None):
             with self.assertRaises(ValueError):
                 server.wait_for_title_change(42, timeout_ms=1_000)
+
+
+class TransportBoundaryTests(unittest.TestCase):
+    def test_main_uses_only_the_stdio_transport(self):
+        """The host client owns the session; this entry point owns no UI."""
+        with patch.object(server.mcp, "run") as run:
+            server.main()
+
+        run.assert_called_once_with(transport="stdio")
 
 
 if __name__ == "__main__":

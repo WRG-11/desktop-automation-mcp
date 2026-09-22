@@ -143,7 +143,7 @@ class ConfirmationTokenRuleTests(unittest.TestCase):
 
     def test_missing_file_is_probe_error_not_invalid(self):
         with self.assertRaises(validate_token.TokenFileError) as ctx:
-            validate_token.load_token(REPO_ROOT / "schema" / "yok.json")
+            validate_token.load_token(REPO_ROOT / "schema" / "missing.json")
         self.assertIn("not found", str(ctx.exception))
 
     def test_invalid_token_cli_exits_one_with_rule_message(self):

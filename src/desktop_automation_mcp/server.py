@@ -1,6 +1,7 @@
 """Secure, window-scoped Windows desktop automation MCP server.
 
-This module owns only the MCP tool surface (`list_windows`, `health_check`,
+This module owns only the MCP tool surface (`list_windows`,
+`policy_visibility_summary`, `health_check`,
 `get_rate_limit_state`, `get_audit_events`, `get_virtual_screen_bounds`,
 `resolve_coordinate_profile_point`, `check_coordinate_profile`,
 `record_coordinate_profile`,
@@ -32,6 +33,7 @@ import mcp.types as types
 from mcp.server.fastmcp import FastMCP
 from PIL import Image, ImageDraw, ImageGrab
 
+from . import target as _target_module
 from .audit import OUTCOME_ALLOWED, OUTCOME_DENIED, OUTCOME_ERROR
 from .audit import read_events as _read_audit_events
 from .audit import record_event as _record_audit_event
@@ -649,6 +651,35 @@ def list_windows() -> list[dict]:
         BUDGET_LIST_WINDOWS_MS,
     )
     return windows
+
+
+@mcp.tool()
+def policy_visibility_summary() -> dict:
+    """Explains an empty `list_windows` result with redacted counts only.
+
+    `observe`-gated configuration diagnostic. Among visible windows whose
+    title matches an allowed pattern it reports how many are fully allowed,
+    how many run the wrong executable, and how many have an unreadable
+    process identity. It never enumerates windows outside the allowed title
+    patterns and never returns a title, executable path, PID, HWND or any
+    screen content.
+    """
+    _require_action(ACTION_OBSERVE)
+    _consume_read_budget()
+    start = time.perf_counter()
+    summary = _target_module.policy_visibility_summary()
+    _check_budget(
+        "policy visibility summary",
+        int((time.perf_counter() - start) * 1000),
+        BUDGET_LIST_WINDOWS_MS,
+    )
+    return {
+        **summary,
+        "limitations": [
+            "Only aggregate counts for allowed title patterns are returned.",
+            "This does not enumerate unallowed windows or expose target identity.",
+        ],
+    }
 
 
 @mcp.tool()

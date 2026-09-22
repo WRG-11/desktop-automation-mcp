@@ -163,6 +163,22 @@ class IssueConsumeFlowTests(unittest.TestCase):
 
 
 class PreviewTests(unittest.TestCase):
+    """`preview` is read-only information, so it must never hand out a token.
+
+    Returning the live `token_id` let any caller that could reach the
+    side-effect-free preview read back an approval token without going
+    through `request_confirmation`, which weakens the separate approval
+    turn documented in docs/reference/confirmation.md. It also echoed the
+    target identity (pid, process path, process start time). The preview
+    now reports only whether a live token exists.
+    """
+
+    SECRET_FIELDS = ("token_id", "token_expires_at", "target_identity")
+
+    def _assert_no_secret_fields(self, summary):
+        for field in self.SECRET_FIELDS:
+            self.assertNotIn(field, summary, msg=field)
+
     def test_requires_confirmation_per_action_class(self):
         store = ConfirmationStore()
         # `drag` was added to the protected class on 2026-09-14 (the
@@ -171,39 +187,48 @@ class PreviewTests(unittest.TestCase):
         for action in ("text", "close", "drag"):
             summary = store.preview(action, _identity())
             self.assertTrue(summary["requires_confirmation"], msg=action)
-            self.assertIsNone(summary["token_id"])
+            self.assertFalse(summary["has_live_token"])
         for action in ("observe", "hover", "click", "key"):
             summary = store.preview(action, _identity())
             self.assertFalse(summary["requires_confirmation"], msg=action)
 
-    def test_preview_reports_live_token(self):
+    def test_preview_reports_that_a_live_token_exists_but_not_the_token(self):
         store = ConfirmationStore()
         token = store.issue(_identity(), "close")
         summary = store.preview("close", _identity())
-        self.assertEqual(summary["token_id"], token["token_id"])
-        self.assertEqual(summary["token_expires_at"], token["expires_at"])
+        self.assertIs(summary["has_live_token"], True)
         self.assertEqual(summary["action_class"], "close")
-        self.assertEqual(summary["target_identity"], _identity())
+        self._assert_no_secret_fields(summary)
+        self.assertNotIn(token["token_id"], repr(summary), "token value leaked")
+
+    def test_preview_without_a_token_carries_no_secret_fields_either(self):
+        summary = ConfirmationStore().preview("close", _identity())
+        self.assertIs(summary["has_live_token"], False)
+        self._assert_no_secret_fields(summary)
 
     def test_preview_hides_consumed_and_expired_tokens(self):
         store = ConfirmationStore()
         token = store.issue(_identity(), "close")
         store.consume(token["token_id"], _identity(), "close")
-        self.assertIsNone(store.preview("close", _identity())["token_id"])
+        self.assertFalse(store.preview("close", _identity())["has_live_token"])
         other = store.issue(_identity(), "text")
         store._tokens[other["token_id"]]["expires_at"] = "2020-01-01T00:00:00+03:00"
-        self.assertIsNone(store.preview("text", _identity())["token_id"])
+        self.assertFalse(store.preview("text", _identity())["has_live_token"])
 
     def test_preview_has_no_side_effects(self):
         store = ConfirmationStore()
-        token = store.issue(_identity(), "close")
+        store.issue(_identity(), "close")
         before = {tid: dict(record) for tid, record in store._tokens.items()}
         with (
             patch.object(
-                ConfirmationStore, "issue", side_effect=AssertionError("issue yok")
+                ConfirmationStore,
+                "issue",
+                side_effect=AssertionError("issue must not be called"),
             ),
             patch.object(
-                ConfirmationStore, "consume", side_effect=AssertionError("consume yok")
+                ConfirmationStore,
+                "consume",
+                side_effect=AssertionError("consume must not be called"),
             ),
         ):
             first = store.preview("close", _identity())
@@ -212,7 +237,7 @@ class PreviewTests(unittest.TestCase):
         self.assertEqual(
             {tid: dict(record) for tid, record in store._tokens.items()}, before
         )
-        self.assertEqual(first["token_id"], token["token_id"])
+        self.assertTrue(first["has_live_token"])
 
 
 class PurgeTests(unittest.TestCase):

@@ -277,7 +277,9 @@ class ProfileValidationTests(unittest.TestCase):
 
     def test_load_missing_file_is_oserror_not_permission_error(self):
         with self.assertRaises(OSError) as ctx:
-            coordinate_profile.load_profile_file(str(REPO_ROOT / "schema" / "yok.json"))
+            coordinate_profile.load_profile_file(
+                str(REPO_ROOT / "schema" / "missing.json")
+            )
         self.assertNotIsInstance(ctx.exception, PermissionError)
 
 
@@ -289,9 +291,9 @@ class ResolvePointTests(unittest.TestCase):
 
     def test_unknown_region_lists_available_names(self):
         with self.assertRaises(PermissionError) as ctx:
-            coordinate_profile.resolve_point(_base_profile(), "yok-bolge")
+            coordinate_profile.resolve_point(_base_profile(), "missing-region")
         message = str(ctx.exception)
-        self.assertIn("yok-bolge", message)
+        self.assertIn("missing-region", message)
         self.assertIn("menu", message)
 
     def test_copy_of_profile_is_not_mutated(self):
@@ -401,7 +403,7 @@ class ProfileCliTests(unittest.TestCase):
             [
                 sys.executable,
                 str(VALIDATOR_PATH),
-                str(REPO_ROOT / "schema" / "yok.json"),
+                str(REPO_ROOT / "schema" / "missing.json"),
             ],
             capture_output=True,
             text=True,

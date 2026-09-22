@@ -130,6 +130,62 @@ def _is_allowed_window(title: str, pid: int) -> bool:
     return _is_allowed_title(title) and _process_path(pid) in _allowed_process_paths()
 
 
+def policy_visibility_summary() -> dict[str, int]:
+    """Count policy-relevant visible-window outcomes without identity data.
+
+    Answers the operator question "why does `list_windows` return nothing?"
+    by splitting the visible windows whose title matches an allowed pattern
+    into: fully allowed, wrong executable, and process identity unreadable.
+    Windows whose title matches no allowed pattern are never counted, so this
+    is a narrow configuration diagnostic, not a desktop inventory or an
+    allowlist oracle. No title, path, PID or HWND leaves this function.
+    """
+    title_patterns = _allowed_title_patterns()
+    process_paths = _allowed_process_paths()
+    summary = {
+        "allowed_visible_window_count": 0,
+        "visible_title_match_count": 0,
+        "process_path_mismatch_count": 0,
+        "process_identity_unreadable_count": 0,
+    }
+    callback_type = ctypes.WINFUNCTYPE(ctypes.c_bool, wintypes.HWND, wintypes.LPARAM)
+
+    def callback(hwnd: int, _lparam: int) -> bool:
+        if not _user32().IsWindowVisible(hwnd) or _user32().IsIconic(hwnd):
+            return True
+        length = _user32().GetWindowTextLengthW(hwnd)
+        if length <= 0:
+            return True
+        buf = ctypes.create_unicode_buffer(length + 1)
+        if _user32().GetWindowTextW(hwnd, buf, length + 1) <= 0:
+            return True
+        if not any(
+            fnmatch.fnmatchcase(buf.value.casefold(), pattern.casefold())
+            for pattern in title_patterns
+        ):
+            return True
+        summary["visible_title_match_count"] += 1
+        pid = wintypes.DWORD()
+        if not _user32().GetWindowThreadProcessId(hwnd, ctypes.byref(pid)):
+            summary["process_identity_unreadable_count"] += 1
+            return True
+        try:
+            process_path = _process_path(int(pid.value))
+            _process_started_at(int(pid.value))
+        except PermissionError:
+            summary["process_identity_unreadable_count"] += 1
+            return True
+        if process_path not in process_paths:
+            summary["process_path_mismatch_count"] += 1
+            return True
+        summary["allowed_visible_window_count"] += 1
+        return True
+
+    if not _user32().EnumWindows(callback_type(callback), 0):
+        raise PlatformError("Could not list open windows.")
+    return summary
+
+
 def _enum_windows() -> list[TargetSnapshot]:
     # If policy is missing, do not swallow that silently inside the
     # callback; reject the call explicitly instead.

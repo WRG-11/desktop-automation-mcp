@@ -27,3 +27,25 @@ Screenshots are constrained by policy-defined regions and masks. They are held
 in memory for the response and are not written to the audit log. This reduces
 exposure but does not make a broadly configured local machine safe: the
 operator remains responsible for granting only narrow policies.
+
+## Design principles
+
+- **No silent failure.** If focus cannot be verified, or another window steps in at the
+  exact MOMENT a screenshot is taken, the tool **throws an error** without sending an
+  image/click. There is no "it was probably the right window" assumption
+  anywhere.
+- **DPI awareness is mandatory at process startup** (`SetProcessDpiAwareness`),
+  otherwise `GetWindowRect` and screen capture can silently use different coordinate
+  systems.
+- **Window-relative coordinates.** The `(x, y)` you pass to `click_window`
+  is relative to the window's top-left corner — even if the window is moved/repositioned,
+  the same `(x, y)` lands on the same UI element.
+- **Zero external dependencies.** Only `ctypes` (Win32 API directly) +
+  `Pillow` (screen capture) + the `mcp` SDK.
+- **No visibility outside allowed targets.** list_windows returns only windows matching the policy
+  patterns.
+- **Images are never written to disk.** The PNG is produced in memory and returned in the MCP response.
+- **No clicking outside the window.** Negative coordinates or coordinates outside the window rect
+  are rejected without action.
+- **No permanent z-order changes.** If focus cannot be verified, the tool fails
+  safely; it never pins the window permanently on top.
