@@ -320,7 +320,7 @@ class PolicyPathRedactionTests(unittest.TestCase):
     """
 
     MARKER = "operator-profile-marker"
-    SECRET_LINE = r"D:\Tools\example-app\target.exe"
+    EXECUTABLE_LINE = r"D:\Tools\example-app\target.exe"
 
     def setUp(self):
         self._tmp = tempfile.TemporaryDirectory()
@@ -363,7 +363,7 @@ class PolicyPathRedactionTests(unittest.TestCase):
     def test_parse_error_quotes_neither_path_nor_file_lines(self):
         path = self._write(
             "broken.yaml",
-            f"application:\n  executable_path: {self.SECRET_LINE}\n  : : :\n",
+            f"application:\n  executable_path: {self.EXECUTABLE_LINE}\n  : : :\n",
         )
         with _env_patch(DESKTOP_AUTOMATION_POLICY_FILE=path):
             with self.assertRaises(errors.PolicyDeniedError) as ctx:
