@@ -5,6 +5,16 @@ All notable user-visible changes are recorded here. This project follows
 
 ## [Unreleased]
 
+### Development
+
+- Pinned every GitHub Actions reference in the quality, CodeQL and
+  release-provenance workflows to a full commit SHA, with the release tag as
+  a trailing comment. A re-pointed tag can no longer change what runs in CI;
+  Dependabot updates the SHA and the comment together.
+- The quality workflow now measures branch coverage with coverage.py and
+  fails below 86% (86.92% measured on Python 3.12, 3.13 and 3.14).
+  `coverage` joined the `dev` extra; the floor lives in `pyproject.toml`.
+
 ## [0.2.0] - 2026-09-22
 
 ### Security

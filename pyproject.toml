@@ -25,6 +25,7 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = [
+    "coverage>=7.16,<8",
     "ruff>=0.15.5,<0.17",
 ]
 
@@ -36,6 +37,18 @@ target-version = "py312"
 # broader rule surface; adopting those rules is separate maintenance work,
 # not an implicit consequence of updating the formatter/linter binary.
 select = ["E4", "E7", "E9", "F"]
+
+[tool.coverage.run]
+branch = true
+source = ["src/desktop_automation_mcp"]
+
+[tool.coverage.report]
+# Floor just under the branch coverage measured on 2026-09-25: 86.92% on
+# Python 3.12, 3.13 and 3.14 alike (371 tests). Raise it as coverage rises;
+# a pull request that lowers it should say why.
+fail_under = 86
+show_missing = true
+skip_covered = true
 
 [project.scripts]
 desktop-automation-mcp = "desktop_automation_mcp.server:main"
