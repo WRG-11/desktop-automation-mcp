@@ -5,6 +5,13 @@ All notable user-visible changes are recorded here. This project follows
 
 ## [Unreleased]
 
+### Documentation
+
+- The README has a "Usage patterns" section. It covers short, targeted
+  input instead of bulk text, automating a background window, the named
+  policy region a screenshot needs, and why minimized or covered windows
+  receive no input.
+
 ### Development
 
 - Pinned every GitHub Actions reference in the quality, CodeQL and
@@ -14,6 +21,12 @@ All notable user-visible changes are recorded here. This project follows
 - The quality workflow now measures branch coverage with coverage.py and
   fails below 86% (86.92% measured on Python 3.12, 3.13 and 3.14).
   `coverage` joined the `dev` extra; the floor lives in `pyproject.toml`.
+- `.project-layout.json` lists `LICENSE`, `NOTICE` and `SECURITY.md`, drops a
+  directory that was never tracked, and orders both lists
+  case-insensitively, as the layout check expects.
+- Two comments named a roadmap phase with a non-English word. Both now say
+  "Phase". `INTEGRITY.sha256` is regenerated because one of them is in
+  `src/`; no code changed.
 
 ## [0.2.0] - 2026-09-22
 

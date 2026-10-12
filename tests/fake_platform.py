@@ -22,7 +22,7 @@ What the chaos test then proves is honest and narrow: (1) geometry
 instability is visible across reads, (2) `_verify_action_target` does not
 consult geometry at all (identity-gated), and (3) out-of-window effects
 stay rejected because bounds are checked against a FRESH rect on every
-call. This is NOT a real 100/125/150 % DPI matrix (ROADMAP Faz 4 item
+call. This is NOT a real 100/125/150 % DPI matrix (ROADMAP Phase 4 item
 stays open) and must not be cited as one.
 """
 
