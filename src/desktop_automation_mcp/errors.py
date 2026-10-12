@@ -21,7 +21,7 @@ wants "was this a security denial or a Win32 failure" keeps working via
 `memory_budget_exceeded` remains a `PolicyDeniedError` subclass so existing
 permission-denial handlers keep working while capacity pressure is separately
 machine-readable. `uia_ambiguous` has no exception class yet — there is no UI Automation
-integration until ROADMAP Faz 2; adding a class for a capability that does
+integration until ROADMAP Phase 2; adding a class for a capability that does
 not exist would be speculative, not a real taxonomy entry.
 """
 

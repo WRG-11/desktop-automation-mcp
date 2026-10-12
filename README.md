@@ -132,6 +132,43 @@ front, it only acts on the window you already focused. Rate limits, the
 screenshot memory budget and input limits are all configurable. Everything is
 listed in the [configuration reference](docs/reference/configuration.md).
 
+## Usage patterns
+
+### Short, targeted input, not bulk text
+
+`send_text` is best suited to a command or a single form field: the Unicode
+path sends UTF-16 units one at a time and revalidates the target for each, so
+long input takes longer. For longer text, accept that per-unit cost or paste
+it with the application's normal controls; `send_text` is a protected action
+and still requires a separate confirmation ([tool reference](docs/reference/tools.md),
+[confirmation workflow](docs/reference/confirmation.md#client-workflow)).
+
+### Automate another window while you work elsewhere
+
+The default `passive` focus mode will not bring a background target forward,
+so input actions require you to focus it first. Set
+`DESKTOP_AUTOMATION_FOCUS_MODE=activate` only when it is acceptable for the
+tool to bring that window forward and take focus
+([focus-mode reference](docs/reference/configuration.md#focus-mode)).
+
+### Screenshots need a named policy region
+
+A text-only action grant does not authorize screenshots: capture uses the
+`observe` permission, and policy-file mode also requires a `region_name`
+listed in `safe_regions`. Legacy environment mode keeps screenshots disabled
+by default ([configuration reference](docs/reference/configuration.md#policy-file),
+[tool reference](docs/reference/tools.md)).
+
+### Minimized or covered windows do not receive input
+
+Input tools act only on visible windows. They reject minimized targets, as well
+as covered or otherwise obscured windows; this is an intentional safety
+boundary, not a failure to automate. To restore a minimized window, call
+[`restore_window(hwnd)`](docs/reference/tools.md#restore_windowhwnd) with
+`observe` permission. Restoring it does not change foreground or focus. In the
+default `passive` mode, bring the restored window to the foreground before
+trying an input action ([focus-mode reference](docs/reference/configuration.md#focus-mode)).
+
 ## Known limitations
 
 - Windows only, on the local machine, for visible (not minimized) top-level
