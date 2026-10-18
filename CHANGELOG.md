@@ -32,6 +32,8 @@ All notable user-visible changes are recorded here. This project follows
 
 ### Documentation
 
+- The README opens with a Notepad policy and the audit event of one refused
+  action, both taken from `schema/examples/`, before the design rationale.
 - `SECURITY.md` names GitHub private vulnerability reporting as the
   reporting channel, now that it is enabled for this repository (it said
   the channel was unavailable), with email as the fallback. Supported
