@@ -6,13 +6,39 @@
 ![Python 3.12+](https://img.shields.io/badge/python-3.12%2B-blue.svg)
 ![Platform: Windows](https://img.shields.io/badge/platform-Windows-lightgrey.svg)
 
-A deny-by-default, per-action-gated MCP server that lets an MCP client
-observe and operate **specific** Windows application windows, and nothing
-else.
+An MCP server that lets a client look at and operate the Windows application windows you
+name in a policy file, and refuses everything else. Windows only, Python 3.12 or newer.
 
-It is not a general desktop-automation tool. Access is granted per
-application and per action class, and every effect is re-verified against the
-live target immediately before it happens.
+A policy names one application and the action classes it may receive. This one allows
+typing into Notepad and closing it, and marks both as needing a confirmation token:
+
+```yaml
+application:
+  executable_path: "C:\\Windows\\System32\\notepad.exe"
+  title_patterns:
+    - "*Notepad*"
+  allowed_actions:
+    - observe
+    - text
+    - close
+  protected_actions:
+    - text
+    - close
+```
+
+An allowed action is still refused when the live target cannot be verified. The audit
+event for one such refusal (fields from `schema/examples/audit_event-denied-text.json`):
+
+```json
+{
+  "policy_id": "notepad-text-policy/v1",
+  "action_type": "text",
+  "outcome": "denied",
+  "denial_reason": "target window is not in the foreground (passive focus gate); text was not sent because the operator did not bring the target to the front"
+}
+```
+
+[Quick start](#quick-start) · [Tools](#tools) · [Known limitations](#known-limitations) · [Documentation](#documentation)
 
 ## Why this design
 
