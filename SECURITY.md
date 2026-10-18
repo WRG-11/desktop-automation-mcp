@@ -2,13 +2,12 @@
 
 ## Reporting a vulnerability
 
-Email **winstonrgsocial@gmail.com** with the subject line
-`SECURITY: desktop-automation-mcp`.
+Report vulnerabilities through GitHub
+[private vulnerability reporting](https://github.com/WRG-11/desktop-automation-mcp/security/advisories/new)
+(`Security` tab → `Report a vulnerability`).
 
-(GitHub Private Vulnerability Reporting was evaluated as the primary channel
-but confirmed unavailable for this repository — `Security tab → Report a
-vulnerability` returns a 404 as of 2026-09-17 — so email is the supported
-channel until that changes.)
+If you cannot use GitHub, email **winstonrgsocial@gmail.com** with the
+subject line `SECURITY: desktop-automation-mcp`.
 
 Do not report security issues through public GitHub issues, discussions, or
 pull requests.
@@ -33,7 +32,7 @@ what the documented tool contract promises.
 
 Out of scope: the operator's own choice to grant broad permissions (e.g. a
 wide `title_patterns` glob), attacks that require local code execution on
-the same machine already (this tool is not a sandbox against a already-
+the same machine already (this tool is not a sandbox against an already-
 compromised host — see the README's "Known limitations" / threat-model notes),
 and denial-of-service via resource exhaustion that the existing rate/memory
 budgets are explicitly documented as not eliminating, only bounding.
@@ -42,8 +41,8 @@ budgets are explicitly documented as not eliminating, only bounding.
 
 | Version | Supported |
 |---|---|
-| Latest `0.1.x` release | Yes |
-| Older `0.1.x` releases | No — please upgrade before reporting |
+| Latest `0.2.x` release | Yes |
+| `0.1.x` and older `0.2.x` releases | No — please upgrade before reporting |
 
 This project has not yet reached `1.0`; there is no long-term-support
 branch. Fixes land on the latest release only.

@@ -32,6 +32,10 @@ All notable user-visible changes are recorded here. This project follows
 
 ### Documentation
 
+- `SECURITY.md` names GitHub private vulnerability reporting as the
+  reporting channel, now that it is enabled for this repository (it said
+  the channel was unavailable), with email as the fallback. Supported
+  versions now name the `0.2.x` line instead of `0.1.x`.
 - The README has a "Usage patterns" section. It covers short, targeted
   input instead of bulk text, automating a background window, the named
   policy region a screenshot needs, and why minimized or covered windows
