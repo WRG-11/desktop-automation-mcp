@@ -31,9 +31,9 @@ jobs:
           python -m pip install --upgrade pip
           python -m pip install ".[dev]" build
       - name: Lint
-        run: python -m ruff check src tests
+        run: python -m ruff check src tests server.py
       - name: Verify formatting
-        run: python -m ruff format --check src tests
+        run: python -m ruff format --check src tests server.py
       # Two steps, not one multi-line step: the Windows default shell only
       # reports the exit code of a step's last command.
       - name: Run unit tests under branch coverage
