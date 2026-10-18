@@ -76,7 +76,7 @@ API adapter; it makes no policy or target decisions.
 | `audit.py` | How is a schema-aligned redacted record kept for this action attempt? | — (in-memory ring buffer) |
 | `rate_limit.py` | Has this application exceeded this minute's budget? | — (independent, sliding window) |
 | `memory_budget.py` | Does concurrent image processing fit the estimated process-wide budget? | `errors.py` |
-| `coordinate_profile.py` | Does the live window match a recorded, reference-zoned coordinate profile? | — (pure comparison, makes no Win32 calls) |
+| `coordinate_profile.py` | Does the live window match a recorded, reference-zoned coordinate profile? | `errors.py` (exception types only; pure comparison, makes no Win32 calls) |
 | `health.py` | Is the server configured and operable (WITHOUT reading screen content)? | `policy.py`, package metadata, a single DPI query |
 | `server.py` | All MCP `@tool` functions + the full `_execute_guarded_action` lifecycle | all of the above |
 
@@ -95,7 +95,9 @@ API adapter; it makes no policy or target decisions.
    without a token, with a wrong token, or with an expired token, no effect occurs.
 5. The shared executor writes the final result to **audit.py** exactly once and uses the same correlation ID as the tool
    response. On error, the typed exception in `errors.py` is re-raised unchanged; builtin compatibility and the stable
-   `.code` are preserved together.
+   `.code` are preserved together. At the MCP boundary, `server._tool()` re-raises the categories in
+   `errors.CATEGORY_ERRORS` as the SDK's `ToolError`, so their message reaches the client; any other exception
+   reaches it only as `Error executing tool <name>`.
 
 `screenshot_window` and `check_coordinate_profile` pass through the same 1–3 chain
 but use the shared image plan instead of input_.py: named region →

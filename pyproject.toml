@@ -15,11 +15,11 @@ classifiers = [
     "Topic :: Software Development :: Libraries :: Python Modules",
 ]
 dependencies = [
-    # The lower bounds are versions locally verified on 2026-09-15 (mcp
-    # 1.29.1, Pillow 12.3.0); prevents a silent fallback to an older/vulnerable version.
-    # FastMCP is imported from the MCP 1.x API.  MCP 2 renamed this surface
-    # and fails at import time, so a release must not resolve to it silently.
-    "mcp>=1.29.1,<2",
+    # The lower bounds are versions locally verified (mcp 2.3.0 on 2026-10-18,
+    # Pillow 12.3.0 on 2026-09-15); prevents a silent fallback to an
+    # older/vulnerable version. The server uses the MCP 2.x `MCPServer` API;
+    # the next major version may change it, so the range stops before 3.
+    "mcp>=2.3,<3",
     "Pillow>=12.3",
 ]
 

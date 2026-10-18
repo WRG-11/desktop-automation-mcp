@@ -33,10 +33,10 @@ async def verify() -> None:
         async with ClientSession(*streams) as session:
             result = await asyncio.wait_for(session.initialize(), timeout=20)
             tools = await asyncio.wait_for(session.list_tools(), timeout=20)
-    if result.serverInfo.name != "desktop-automation":
+    if result.server_info.name != "desktop-automation":
         raise RuntimeError(
             "MCP server identity mismatch: "
-            f"expected 'desktop-automation', got {result.serverInfo.name!r}"
+            f"expected 'desktop-automation', got {result.server_info.name!r}"
         )
     if "health_check" not in {tool.name for tool in tools.tools}:
         raise RuntimeError("MCP tool discovery did not include health_check")

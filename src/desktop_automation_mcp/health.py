@@ -37,13 +37,13 @@ from .platform_win32 import (
 )
 
 # Version bounds mirror pyproject.toml [project].dependencies exactly
-# (`mcp>=1.29.1,<2`, `Pillow>=12.3`). pyproject cannot be read at install
+# (`mcp>=2.3,<3`, `Pillow>=12.3`). pyproject cannot be read at install
 # time (the package ships alone), so they are pinned here; if they change,
-# BOTH places are updated together. MCP 2.x renames the `FastMCP` API, so
-# a floor-only check is not safe: installation would resolve but the
-# server import would break.
+# BOTH places are updated together. The server uses the MCP 2.x `MCPServer`
+# API and its `ToolError` forwarding rule, which a different major version
+# may change, so a floor-only check is not safe.
 _DEPENDENCY_BOUNDS = {
-    "mcp": {"floor": "1.29.1", "ceiling_exclusive": "2"},
+    "mcp": {"floor": "2.3", "ceiling_exclusive": "3"},
     "Pillow": {"floor": "12.3", "ceiling_exclusive": None},
 }
 

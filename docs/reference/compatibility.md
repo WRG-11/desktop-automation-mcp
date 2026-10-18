@@ -1,6 +1,6 @@
 # Compatibility
 
-The supported baseline is Windows with Python 3.12 or later and the MCP 1.x
+The supported baseline is Windows with Python 3.12 or later and the MCP 2.x
 SDK range declared in `pyproject.toml`. The server uses Win32 APIs directly
 and is not supported on macOS or Linux.
 

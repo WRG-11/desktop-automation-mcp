@@ -19,6 +19,7 @@ this module composes them but does not duplicate their logic.
 from __future__ import annotations
 
 import base64
+import functools
 import hashlib
 import io
 import os
@@ -30,9 +31,11 @@ from datetime import datetime, timezone
 from typing import TypeVar
 
 import mcp.types as types
-from mcp.server.fastmcp import FastMCP
+from mcp.server.mcpserver import MCPServer
+from mcp.server.mcpserver.exceptions import ToolError
 from PIL import Image, ImageDraw, ImageGrab
 
+from . import __version__
 from . import target as _target_module
 from .audit import OUTCOME_ALLOWED, OUTCOME_DENIED, OUTCOME_ERROR
 from .audit import read_events as _read_audit_events
@@ -50,6 +53,7 @@ from .health import check_health as _check_health
 from .memory_budget import InFlightMemoryBudget
 from .rate_limit import SlidingWindowLimiter
 from .errors import (
+    CATEGORY_ERRORS,
     ActionTimeoutError,
     InputRejectedError,
     PlatformError,
@@ -291,7 +295,48 @@ def _consume_read_budget() -> None:
     _read_rate_limiter.consume(_policy_id(), 1, MAX_READS_PER_MINUTE)
 
 
-mcp = FastMCP("desktop-automation")
+mcp = MCPServer("desktop-automation", version=__version__)
+
+
+def _tool() -> Callable:
+    """Register a function as an MCP tool whose category errors reach the client.
+
+    The MCP SDK forwards only `ToolError` text to the client and reports any
+    other exception as a bare "Error executing tool <name>". The categories in
+    `errors.py` carry messages written for the client, so they are re-raised
+    as `ToolError`; anything else stays generic and is logged by the SDK.
+    The undecorated function is returned, so in-process callers (and the
+    tests) keep receiving the original exception types.
+    """
+
+    def decorate(fn: Callable) -> Callable:
+        @functools.wraps(fn)
+        def forwarding(*args, **kwargs):
+            try:
+                return fn(*args, **kwargs)
+            except CATEGORY_ERRORS as exc:
+                raise ToolError(str(exc)) from exc
+
+        mcp.tool()(forwarding)
+        return fn
+
+    return decorate
+
+
+def _load_profile_for_tool(profile_path: str) -> dict:
+    """Load a caller-named coordinate profile; an unreadable file is input error.
+
+    `coordinate_profile.load_profile_file` keeps its contract (`OSError` for
+    an unreadable file, `PolicyDeniedError` for invalid content). The path is
+    the caller's own argument, so a missing or unreadable file is reported
+    back as `InputRejectedError` and the caller can correct it.
+    """
+    try:
+        return _load_profile_file(profile_path)
+    except PermissionError:
+        raise
+    except OSError as exc:
+        raise InputRejectedError(str(exc)) from exc
 
 
 def _target_identity(target: TargetSnapshot) -> dict:
@@ -628,7 +673,7 @@ def _execute_guarded_action(
     return result
 
 
-@mcp.tool()
+@_tool()
 def list_windows() -> list[dict]:
     """Lists only the allowed visible windows.
 
@@ -653,7 +698,7 @@ def list_windows() -> list[dict]:
     return windows
 
 
-@mcp.tool()
+@_tool()
 def policy_visibility_summary() -> dict:
     """Explains an empty `list_windows` result with redacted counts only.
 
@@ -682,7 +727,7 @@ def policy_visibility_summary() -> dict:
     }
 
 
-@mcp.tool()
+@_tool()
 def health_check() -> dict:
     """Checks in a read-only way whether the server is configured and
     operable (policy, dependencies, DPI-awareness).
@@ -726,7 +771,7 @@ def _redact_audit_event_for_read(event: dict) -> dict:
     return projected
 
 
-@mcp.tool()
+@_tool()
 def get_rate_limit_state() -> dict:
     """Reports current in-memory rate-limit and screenshot-memory usage.
 
@@ -757,7 +802,7 @@ def get_rate_limit_state() -> dict:
     }
 
 
-@mcp.tool()
+@_tool()
 def get_audit_events(limit: int = 20) -> dict:
     """Returns the most recent redacted audit events, newest first.
 
@@ -787,7 +832,7 @@ def get_audit_events(limit: int = 20) -> dict:
     }
 
 
-@mcp.tool()
+@_tool()
 def get_virtual_screen_bounds() -> dict:
     """Reports the live virtual-desktop bounds for multi-monitor debugging.
 
@@ -809,7 +854,7 @@ def get_virtual_screen_bounds() -> dict:
     }
 
 
-@mcp.tool()
+@_tool()
 def resolve_coordinate_profile_point(profile_path: str, region_name: str) -> dict:
     """Resolves the center coordinate of a named region in a
     coordinate-profile file.
@@ -823,7 +868,7 @@ def resolve_coordinate_profile_point(profile_path: str, region_name: str) -> dic
     `PermissionError` if the profile is invalid or the region name is
     unknown.
     """
-    profile = _load_profile_file(profile_path)
+    profile = _load_profile_for_tool(profile_path)
     x, y = _resolve_profile_point(profile, region_name)
     return {
         "profile_id": profile["profile_id"],
@@ -833,7 +878,7 @@ def resolve_coordinate_profile_point(profile_path: str, region_name: str) -> dic
     }
 
 
-@mcp.tool()
+@_tool()
 def check_coordinate_profile(
     profile_path: str,
     title_contains: str | None = None,
@@ -857,7 +902,7 @@ def check_coordinate_profile(
     privacy_context: dict = {}
 
     def effect(target: TargetSnapshot, correlation_id: str) -> dict:
-        profile = _load_profile_file(profile_path)
+        profile = _load_profile_for_tool(profile_path)
         profile_path_normalized = os.path.normcase(
             os.path.abspath(profile["application"]["process_path"])
         )
@@ -950,7 +995,7 @@ def _checked_rect(value: object, where: str) -> list[int]:
     return value
 
 
-@mcp.tool()
+@_tool()
 def record_coordinate_profile(
     profile_id: str,
     reference_region_name: str,
@@ -1339,7 +1384,7 @@ def _grab_screenshot_as_png(
         image.close()
 
 
-@mcp.tool()
+@_tool()
 def screenshot_window(
     title_contains: str | None = None,
     hwnd: int | None = None,
@@ -1448,7 +1493,7 @@ def screenshot_window(
     )
 
 
-@mcp.tool()
+@_tool()
 def get_window_state(hwnd: int) -> dict:
     """Reads an allowed target's live state (read-only, requires no focus).
 
@@ -1468,7 +1513,7 @@ def get_window_state(hwnd: int) -> dict:
     return state
 
 
-@mcp.tool()
+@_tool()
 def restore_window(hwnd: int) -> str:
     """Restores a minimized (iconic) allowed window without changing focus.
 
@@ -1549,7 +1594,7 @@ def restore_window(hwnd: int) -> str:
     return result
 
 
-@mcp.tool()
+@_tool()
 def request_confirmation(
     action_class: str,
     title_contains: str | None = None,
@@ -1588,7 +1633,7 @@ def request_confirmation(
     return _execute_guarded_action(action_class, title_contains, hwnd, effect)
 
 
-@mcp.tool()
+@_tool()
 def preview_action(
     action_class: str,
     title_contains: str | None = None,
@@ -1623,7 +1668,7 @@ def preview_action(
     return result
 
 
-@mcp.tool()
+@_tool()
 def wait_for_window(
     title_contains: str,
     timeout_ms: int = 5_000,
@@ -1667,7 +1712,7 @@ def wait_for_window(
         time.sleep(poll_interval_ms / 1000)
 
 
-@mcp.tool()
+@_tool()
 def wait_for_title_change(
     hwnd: int,
     timeout_ms: int = 5_000,
@@ -1746,7 +1791,7 @@ def _press_release(
             _user32().mouse_event(up_flag, 0, 0, 0, 0)
 
 
-@mcp.tool()
+@_tool()
 def click_window(
     title_contains: str | None = None,
     hwnd: int | None = None,
@@ -1775,7 +1820,7 @@ def click_window(
     return _execute_guarded_action(ACTION_CLICK, title_contains, hwnd, effect)
 
 
-@mcp.tool()
+@_tool()
 def double_click_window(
     title_contains: str | None = None,
     hwnd: int | None = None,
@@ -1804,7 +1849,7 @@ def double_click_window(
     return _execute_guarded_action(ACTION_CLICK, title_contains, hwnd, effect)
 
 
-@mcp.tool()
+@_tool()
 def right_click_window(
     title_contains: str | None = None,
     hwnd: int | None = None,
@@ -1831,7 +1876,7 @@ def right_click_window(
     return _execute_guarded_action(ACTION_CLICK, title_contains, hwnd, effect)
 
 
-@mcp.tool()
+@_tool()
 def hover_window(
     title_contains: str | None = None,
     hwnd: int | None = None,
@@ -1866,7 +1911,7 @@ def hover_window(
     return _execute_guarded_action(ACTION_HOVER, title_contains, hwnd, effect)
 
 
-@mcp.tool()
+@_tool()
 def scroll_window(
     title_contains: str | None = None,
     hwnd: int | None = None,
@@ -1917,7 +1962,7 @@ def scroll_window(
     return _execute_guarded_action(ACTION_CLICK, title_contains, hwnd, effect)
 
 
-@mcp.tool()
+@_tool()
 def drag_window(
     title_contains: str | None = None,
     hwnd: int | None = None,
@@ -2004,7 +2049,7 @@ def drag_window(
     return _execute_guarded_action(ACTION_DRAG, title_contains, hwnd, effect)
 
 
-@mcp.tool()
+@_tool()
 def send_text(
     title_contains: str | None = None,
     hwnd: int | None = None,
@@ -2064,7 +2109,7 @@ def send_text(
     return _execute_guarded_action(ACTION_TEXT, title_contains, hwnd, effect)
 
 
-@mcp.tool()
+@_tool()
 def send_key(
     title_contains: str | None = None,
     hwnd: int | None = None,
@@ -2164,7 +2209,7 @@ def _checked_drag_path(value: object) -> list[list[int]]:
     return [list(point) for point in value]
 
 
-@mcp.tool()
+@_tool()
 def send_key_sequence(
     keys: list[dict],
     title_contains: str | None = None,
@@ -2241,7 +2286,7 @@ def send_key_sequence(
     return _execute_guarded_action(ACTION_KEY, title_contains, hwnd, effect)
 
 
-@mcp.tool()
+@_tool()
 def close_window(
     title_contains: str | None = None,
     hwnd: int | None = None,
