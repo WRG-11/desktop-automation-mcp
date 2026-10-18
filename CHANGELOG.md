@@ -11,6 +11,12 @@ All notable user-visible changes are recorded here. This project follows
   input instead of bulk text, automating a background window, the named
   policy region a screenshot needs, and why minimized or covered windows
   receive no input.
+- The module table in `docs/design/architecture-map.md` no longer lists line
+  counts. They were written by hand and had drifted from the source; the
+  table keeps what each module answers and what it calls.
+- `docs/design/version-matrix.md` states the dependency bounds that
+  `pyproject.toml` declares: MCP `>=1.29.1,<2` (it said `>=1.29,<2`) and
+  Pillow `>=12.3`.
 
 ### Development
 
@@ -27,6 +33,10 @@ All notable user-visible changes are recorded here. This project follows
 - Two comments named a roadmap phase with a non-English word. Both now say
   "Phase". `INTEGRITY.sha256` is regenerated because one of them is in
   `src/`; no code changed.
+- The root `server.py` compatibility wrapper is now linted and format-checked
+  in CI. Its import follows a `sys.path` insertion on purpose, so the E402
+  finding is suppressed on that line with a comment; a blank line was added
+  after the docstring for `ruff format`. Behaviour is unchanged.
 
 ## [0.2.0] - 2026-09-22
 

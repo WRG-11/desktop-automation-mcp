@@ -63,22 +63,22 @@ API adapter; it makes no policy or target decisions.
 
 ## 3. Module table (`src/desktop_automation_mcp/`)
 
-| File | Lines | Answers the question | Calls |
-|---|---|---|---|
-| `platform_win32.py` | 184 | How does this process talk to the Win32 API? (ctypes signatures/constants + scoped adapter + DPI runtime gate) | `errors.py` |
-| `errors.py` | 107 | Why did this action fail, in which stable category? | — (only inherits builtin exceptions) |
-| `policy.py` | 245 | Which title/path/action/focus-mode/image path is permitted per the environment variables? | `policy_file.py` (if a file exists) |
-| `policy_file.py` | 664 | Does the at-most-1-MiB `schema/policy.schema.json` file satisfy the schema + cross-field rules? | `errors.py` |
-| `target.py` | 300 | Which live HWND matches the policy, what is its identity (`TargetSnapshot`)? | `policy.py`, `platform_win32.py` adapter |
-| `visibility.py` | 150 | Is the target really in the foreground/visible/same process right now? | `target.py` (to read rect), `platform_win32.py` adapter |
-| `input_.py` | 159 | How is a single mouse/keyboard/Unicode-text event sent SAFELY? | `visibility.py` (re-verifies before every event), `platform_win32.py` adapter |
-| `confirmation.py` | 318 | Single-use confirmation token for guarded actions (`text`/`close`/`drag`) | — (in-memory, independent) |
-| `audit.py` | 208 | How is a schema-aligned redacted record kept for this action attempt? | — (in-memory ring buffer) |
-| `rate_limit.py` | 83 | Has this application exceeded this minute's budget? | — (independent, sliding window) |
-| `memory_budget.py` | 50 | Does concurrent image processing fit the estimated process-wide budget? | `errors.py` |
-| `coordinate_profile.py` | 603 | Does the live window match a recorded, reference-zoned coordinate profile? | — (pure comparison, makes no Win32 calls) |
-| `health.py` | 205 | Is the server configured and operable (WITHOUT reading screen content)? | `policy.py`, package metadata, a single DPI query |
-| `server.py` | 1310 | All MCP `@tool` functions + the full `_execute_guarded_action` lifecycle | all of the above |
+| File | Answers the question | Calls |
+|---|---|---|
+| `platform_win32.py` | How does this process talk to the Win32 API? (ctypes signatures/constants + scoped adapter + DPI runtime gate) | `errors.py` |
+| `errors.py` | Why did this action fail, in which stable category? | — (only inherits builtin exceptions) |
+| `policy.py` | Which title/path/action/focus-mode/image path is permitted per the environment variables? | `policy_file.py` (if a file exists) |
+| `policy_file.py` | Does the at-most-1-MiB `schema/policy.schema.json` file satisfy the schema + cross-field rules? | `errors.py` |
+| `target.py` | Which live HWND matches the policy, what is its identity (`TargetSnapshot`)? | `policy.py`, `platform_win32.py` adapter |
+| `visibility.py` | Is the target really in the foreground/visible/same process right now? | `target.py` (to read rect), `platform_win32.py` adapter |
+| `input_.py` | How is a single mouse/keyboard/Unicode-text event sent SAFELY? | `visibility.py` (re-verifies before every event), `platform_win32.py` adapter |
+| `confirmation.py` | Single-use confirmation token for guarded actions (`text`/`close`/`drag`) | — (in-memory, independent) |
+| `audit.py` | How is a schema-aligned redacted record kept for this action attempt? | — (in-memory ring buffer) |
+| `rate_limit.py` | Has this application exceeded this minute's budget? | — (independent, sliding window) |
+| `memory_budget.py` | Does concurrent image processing fit the estimated process-wide budget? | `errors.py` |
+| `coordinate_profile.py` | Does the live window match a recorded, reference-zoned coordinate profile? | — (pure comparison, makes no Win32 calls) |
+| `health.py` | Is the server configured and operable (WITHOUT reading screen content)? | `policy.py`, package metadata, a single DPI query |
+| `server.py` | All MCP `@tool` functions + the full `_execute_guarded_action` lifecycle | all of the above |
 
 ## 4. A typical action flow: a `click_window` call step by step
 
