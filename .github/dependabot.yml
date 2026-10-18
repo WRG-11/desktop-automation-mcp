@@ -5,8 +5,9 @@ updates:
     schedule:
       interval: "weekly"
     ignore:
-      # The server imports the MCP 1.x FastMCP API. A major upgrade needs an
-      # explicit compatibility migration, not an automated manifest edit.
+      # The server uses the MCP 2.x MCPServer API and its ToolError rule. A
+      # major upgrade needs an explicit compatibility migration, not an
+      # automated manifest edit.
       - dependency-name: "mcp"
         update-types: ["version-update:semver-major"]
   - package-ecosystem: "github-actions"

@@ -105,3 +105,17 @@ class PlatformError(OSError):
     not a security decision."""
 
     code = PLATFORM_ERROR
+
+
+# Every category above. Their messages are written for the MCP client (no
+# paths, no screen content), so the server forwards exactly these to the
+# client; any other exception reaches it only as a generic tool failure.
+CATEGORY_ERRORS = (
+    PolicyDeniedError,
+    TargetStaleError,
+    TargetOccludedError,
+    TargetNotForegroundError,
+    InputRejectedError,
+    ActionTimeoutError,
+    PlatformError,
+)

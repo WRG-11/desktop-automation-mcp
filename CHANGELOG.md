@@ -5,6 +5,31 @@ All notable user-visible changes are recorded here. This project follows
 
 ## [Unreleased]
 
+### Changed
+
+- The server now runs on the MCP Python SDK 2.x (`mcp>=2.3,<3`, verified with
+  2.3.0); MCP 1.x is no longer supported. `FastMCP` became `MCPServer`.
+- MCP 2.x forwards only `ToolError` text to the client and reports any other
+  exception as `Error executing tool <name>`. Every tool now re-raises the
+  error categories in `errors.py` (`errors.CATEGORY_ERRORS`) as `ToolError`,
+  so denial and input messages still reach the client exactly as before; any
+  other exception, which MCP 1.x also forwarded verbatim, now stays in the
+  server log. Measured over stdio with no policy configured, the same 47
+  `tools/call` requests against MCP 1.30.0 (before this change) and 2.3.0
+  (after it): 46 answer identically; the other is `health_check`'s dependency
+  detail text. `initialize` no longer lists an empty `experimental`
+  capability, and `screenshot_window` no longer advertises an
+  `outputSchema` (MCP 1.x generated one for the image result).
+- Client-reachable checks that raised a bare builtin now raise the matching
+  category, which subclasses the same builtin: confirmation argument checks
+  and a vanished `hwnd` raise `InputRejectedError` (`ValueError`); target
+  identity checks and invalid coordinate profiles raise `PolicyDeniedError`
+  (`PermissionError`). A missing or unreadable coordinate-profile file named
+  by the caller is reported as `InputRejectedError`.
+- `serverInfo.version` is the package version. MCP 1.x reported the SDK's own
+  version there, and MCP 2.x would report an empty string.
+- `health_check` checks the new bounds (`mcp` floor 2.3, ceiling below 3).
+
 ### Documentation
 
 - The README has a "Usage patterns" section. It covers short, targeted
@@ -37,6 +62,13 @@ All notable user-visible changes are recorded here. This project follows
   in CI. Its import follows a `sys.path` insertion on purpose, so the E402
   finding is suppressed on that line with a comment; a blank line was added
   after the docstring for `ruff format`. Behaviour is unchanged.
+- `tools/verify_stdio_handshake.py` and one test read the SDK's renamed
+  attributes (`server_info`, `mime_type`); the JSON on the wire keeps its
+  camelCase names.
+- New tests cover the error-forwarding rule (each category forwarded with its
+  text, any other exception kept generic, in-process callers keep the original
+  type, tool schemas unchanged) and a stdio test asserts that a denied call's
+  message arrives over the wire.
 
 ## [0.2.0] - 2026-09-22
 

@@ -89,7 +89,7 @@ class DependencySectionTests(unittest.TestCase):
         )
 
     def test_below_floor_version_is_not_ok(self):
-        versions = {"mcp": "1.29.1", "Pillow": "1.0"}
+        versions = {"mcp": "2.3.0", "Pillow": "1.0"}
         with patch.object(
             health._dist_metadata, "version", side_effect=lambda name: versions[name]
         ):
@@ -98,8 +98,8 @@ class DependencySectionTests(unittest.TestCase):
         self.assertTrue(report["dependencies"]["mcp"]["ok"])
         self.assertIn("is below the floor", report["dependencies"]["pillow"]["detail"])
 
-    def test_mcp_v2_is_not_ok_when_the_server_requires_the_v1_api(self):
-        versions = {"mcp": "2.0.0", "Pillow": "12.3.0"}
+    def test_mcp_v3_is_not_ok_when_the_server_requires_the_v2_api(self):
+        versions = {"mcp": "3.0.0", "Pillow": "12.3.0"}
         with patch.object(
             health._dist_metadata, "version", side_effect=lambda name: versions[name]
         ):
@@ -107,6 +107,16 @@ class DependencySectionTests(unittest.TestCase):
         self.assertFalse(report["dependencies"]["ok"])
         self.assertFalse(report["dependencies"]["mcp"]["ok"])
         self.assertIn("outside the ceiling", report["dependencies"]["mcp"]["detail"])
+
+    def test_mcp_v1_is_below_the_floor_of_the_v2_api(self):
+        versions = {"mcp": "1.30.0", "Pillow": "12.3.0"}
+        with patch.object(
+            health._dist_metadata, "version", side_effect=lambda name: versions[name]
+        ):
+            report = health.check_health()
+        self.assertFalse(report["dependencies"]["ok"])
+        self.assertFalse(report["dependencies"]["mcp"]["ok"])
+        self.assertIn("is below the floor", report["dependencies"]["mcp"]["detail"])
 
     def test_version_compare_treats_missing_patch_as_zero(self):
         self.assertTrue(health._version_gte("12.3", "12.3.0"))

@@ -76,14 +76,16 @@ class TargetSnapshot:
 def _process_path(pid: int) -> str:
     handle = _kernel32().OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, False, pid)
     if not handle:
-        raise PermissionError(f"Could not verify target process identity (pid={pid}).")
+        raise PolicyDeniedError(
+            f"Could not verify target process identity (pid={pid})."
+        )
     try:
         buffer = ctypes.create_unicode_buffer(32_768)
         length = wintypes.DWORD(len(buffer))
         if not _kernel32().QueryFullProcessImageNameW(
             handle, 0, buffer, ctypes.byref(length)
         ):
-            raise PermissionError(
+            raise PolicyDeniedError(
                 f"Could not read target process executable name (pid={pid})."
             )
         return _normalise_process_path(buffer.value)
@@ -95,7 +97,7 @@ def _process_started_at(pid: int) -> int:
     """Return the process creation FILETIME as a stable PID-generation marker."""
     handle = _kernel32().OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, False, pid)
     if not handle:
-        raise PermissionError(
+        raise PolicyDeniedError(
             f"Could not verify target process start time (pid={pid})."
         )
     try:
@@ -110,7 +112,7 @@ def _process_started_at(pid: int) -> int:
             ctypes.byref(kernel_time),
             ctypes.byref(user_time),
         ):
-            raise PermissionError(
+            raise PolicyDeniedError(
                 f"Could not read target process start time (pid={pid})."
             )
         return (int(created.dwHighDateTime) << 32) | int(created.dwLowDateTime)
@@ -296,7 +298,7 @@ def _window_diagnostic_state(hwnd: int) -> dict:
     allowlist; it does not expose state for a window outside that policy.
     """
     if not _user32().IsWindow(hwnd):
-        raise ValueError(f"hwnd={hwnd} no longer exists.")
+        raise InputRejectedError(f"hwnd={hwnd} no longer exists.")
     length = _user32().GetWindowTextLengthW(hwnd)
     title_buffer = ctypes.create_unicode_buffer(max(length, 0) + 1)
     if length > 0:

@@ -62,7 +62,7 @@ import threading
 import uuid
 from datetime import datetime, timedelta, timezone
 
-from .errors import PolicyDeniedError
+from .errors import InputRejectedError, PolicyDeniedError
 from .policy_file import is_past, parse_offset_aware
 
 ACTION_TEXT = "text"
@@ -105,7 +105,7 @@ def is_protected_action(action_class: str, extra_protected=None) -> bool:
 def _check_action_class(action_class: str, extra_protected=None) -> str:
     if is_protected_action(action_class, extra_protected):
         return action_class
-    raise ValueError(
+    raise InputRejectedError(
         f"unknown action class {action_class!r}; protected classes: "
         + ", ".join(sorted(PROTECTED_ACTION_CLASSES))
     )
@@ -118,23 +118,25 @@ def _check_identity(identity: object) -> dict:
     the stored binding does not change.
     """
     if not isinstance(identity, dict):
-        raise ValueError(
+        raise InputRejectedError(
             "target identity must be an object "
             f"(hwnd/pid/process_started_at); found: {type(identity).__name__}"
         )
     missing = [f for f in IDENTITY_FIELDS if f not in identity]
     if missing:
-        raise ValueError(f"missing field(s) in target identity: {', '.join(missing)}")
+        raise InputRejectedError(
+            f"missing field(s) in target identity: {', '.join(missing)}"
+        )
     for field in IDENTITY_FIELDS:
         value = identity[field]
         if not isinstance(value, int) or isinstance(value, bool):
-            raise ValueError(
+            raise InputRejectedError(
                 f"target identity '{field}' must be an integer (not boolean); "
                 f"found: {type(value).__name__}"
             )
     extra = sorted(set(identity) - set(IDENTITY_FIELDS))
     if extra:
-        raise ValueError(
+        raise InputRejectedError(
             f"unknown field(s) in target identity: {', '.join(extra)}; "
             "allowed: hwnd, pid, process_started_at"
         )
@@ -143,12 +145,12 @@ def _check_identity(identity: object) -> dict:
 
 def _check_ttl(ttl_seconds: int) -> int:
     if isinstance(ttl_seconds, bool) or not isinstance(ttl_seconds, int):
-        raise ValueError(
+        raise InputRejectedError(
             "ttl_seconds must be an integer (not boolean); "
             f"found: {type(ttl_seconds).__name__}"
         )
     if not 0 < ttl_seconds <= MAX_TTL_SECONDS:
-        raise ValueError(
+        raise InputRejectedError(
             f"ttl_seconds must be between 1 and {MAX_TTL_SECONDS} "
             "(short-lived principle); "
             f"found: {ttl_seconds!r}"

@@ -7,9 +7,14 @@ network listener.
 ## Compatibility boundary
 
 - **Platform:** Windows only, with Python 3.12 or later.
-- **SDK:** the `mcp` dependency range in `pyproject.toml` (`>=1.29.1,<2`).
-  The server does not claim compatibility with MCP 2.x or with a protocol
-  revision outside the installed SDK's supported range.
+- **SDK:** the `mcp` dependency range in `pyproject.toml` (`>=2.3,<3`).
+  The server does not claim compatibility with MCP 1.x, with a later major
+  version, or with a protocol revision outside the installed SDK's supported
+  range.
+- **Tool errors:** a failure in one of the categories in `errors.py` reaches
+  the client as an `isError` result carrying the category's message. Any
+  other exception reaches it only as `Error executing tool <name>`; the detail
+  stays in the server log.
 - **Verified client path:** the MCP Python SDK stdio client used by the release
   gate initializes the installed console entry point and performs tool
   discovery. Other MCP clients are welcome to use stdio, but are not a

@@ -47,7 +47,7 @@ Flash content in Ruffle) through versioned, hash-verified coordinate profiles.
 
 - Windows (the server calls Win32 APIs directly)
 - Python 3.12 or newer (CI covers 3.12, 3.13 and 3.14)
-- Runtime dependencies: [`mcp`](https://pypi.org/project/mcp/) 1.x and
+- Runtime dependencies: [`mcp`](https://pypi.org/project/mcp/) 2.x and
   [Pillow](https://pypi.org/project/pillow/)
 
 ## Quick start

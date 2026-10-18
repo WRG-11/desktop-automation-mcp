@@ -2152,7 +2152,7 @@ class ScreenshotToctouTests(unittest.TestCase):
             patch.object(server.ImageGrab, "grab", return_value=fake_image),
         ):
             result = server.screenshot_window(hwnd=42)
-        self.assertEqual(result.mimeType, "image/png")
+        self.assertEqual(result.mime_type, "image/png")
         fake_image.save.assert_called_once()
         fake_image.close.assert_called_once()
 

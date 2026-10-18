@@ -1,7 +1,7 @@
 # Compatibility and test coverage
 
 The supported runtime is Windows with Python 3.12 or newer. Package metadata
-currently constrains the MCP Python SDK to the 1.x line (`>=1.29.1,<2`)
+currently constrains the MCP Python SDK to the 2.x line (`>=2.3,<3`)
 and Pillow to `>=12.3`, with no upper bound.
 
 ## Continuous integration coverage

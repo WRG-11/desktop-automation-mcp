@@ -14,6 +14,10 @@ from pathlib import Path
 
 import mcp.types as mcp_types
 
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
+
+from desktop_automation_mcp import __version__
+
 
 _ROOT = Path(__file__).resolve().parents[1]
 _TIMEOUT_SECONDS = 10
@@ -92,6 +96,7 @@ class StdioProtocolTests(unittest.TestCase):
                 },
             )
             self.assertEqual(initialized["serverInfo"]["name"], "desktop-automation")
+            self.assertEqual(initialized["serverInfo"]["version"], __version__)
 
             assert process.stdin is not None
             process.stdin.write(
@@ -105,6 +110,12 @@ class StdioProtocolTests(unittest.TestCase):
 
             health = request(3, "tools/call", {"name": "health_check", "arguments": {}})
             self.assertFalse(health.get("isError", False))
+
+            # No policy is configured, so this is denied. The denial text is
+            # written for the client and must arrive, not a generic failure.
+            denied = request(4, "tools/call", {"name": "list_windows", "arguments": {}})
+            self.assertTrue(denied.get("isError"))
+            self.assertIn("is not allowed", denied["content"][0]["text"])
         finally:
             if process.stdin is not None:
                 process.stdin.close()

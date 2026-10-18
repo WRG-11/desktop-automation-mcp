@@ -65,6 +65,8 @@ import re
 from datetime import datetime, timezone
 from pathlib import Path
 
+from .errors import PolicyDeniedError
+
 _PROFILE_ID_RE = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]*")
 _HASH_RE = re.compile(r"[0-9a-f]{64}")
 _OFFSET_SUFFIX_RE = re.compile(r"[+-]\d{2}:?\d{2}$")
@@ -473,7 +475,7 @@ def validate_profile(profile: dict) -> None:
     """
     problems = validate_profile_document(profile)
     if problems:
-        raise PermissionError("coordinate profile invalid: " + "; ".join(problems))
+        raise PolicyDeniedError("coordinate profile invalid: " + "; ".join(problems))
     return None
 
 
@@ -487,7 +489,7 @@ def load_profile_file(path: str) -> dict:
     try:
         doc = read_profile_document(path)
     except ProfileParseError as exc:
-        raise PermissionError(
+        raise PolicyDeniedError(
             f"could not parse coordinate profile ({path}): {exc}"
         ) from exc
     validate_profile(doc)
@@ -502,7 +504,9 @@ def resolve_point(profile: dict, region_name: str) -> tuple[int, int]:
     """
     regions = profile.get("safe_regions") if isinstance(profile, dict) else None
     if not isinstance(regions, list):
-        raise PermissionError("profile has no resolvable safe_regions; profile invalid")
+        raise PolicyDeniedError(
+            "profile has no resolvable safe_regions; profile invalid"
+        )
     names = [region.get("name") for region in regions if isinstance(region, dict)]
     for region in regions:
         if isinstance(region, dict) and region.get("name") == region_name:
@@ -512,13 +516,13 @@ def resolve_point(profile: dict, region_name: str) -> tuple[int, int]:
                 or len(rect) != 4
                 or not all(_is_int(v) for v in rect)
             ):
-                raise PermissionError(
+                raise PolicyDeniedError(
                     f"'{region_name}' region has a corrupt rect; profile invalid"
                 )
             left, top, right, bottom = rect
             return ((left + right) // 2, (top + bottom) // 2)
     known = ", ".join(sorted(str(name) for name in names if name)) or "(none)"
-    raise PermissionError(
+    raise PolicyDeniedError(
         f"unknown region {region_name!r}; regions in profile: {known}"
     )
 
