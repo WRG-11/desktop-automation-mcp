@@ -109,7 +109,7 @@ py -3.12 tools/validate_coordinate_profile.py schema/examples/coordinate_profile
 Two MCP tools use these profiles:
 
 - `resolve_coordinate_profile_point(profile_path, region_name)` — read-only,
-  makes no Win32/screen calls and requires no permission; returns the
+  makes no Win32/screen calls and requires the `observe` permission; returns the
   center coordinates of a named region in the profile. An unknown `region_name`
   is rejected with an explicit error listing the existing region
   names.

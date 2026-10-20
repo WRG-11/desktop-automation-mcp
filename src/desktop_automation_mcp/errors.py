@@ -36,6 +36,7 @@ TIMEOUT = "timeout"
 UIA_AMBIGUOUS = "uia_ambiguous"
 PLATFORM_ERROR = "platform_error"
 MEMORY_BUDGET_EXCEEDED = "memory_budget_exceeded"
+POLICY_SOURCE_UNAVAILABLE = "policy_source_unavailable"
 
 
 class PolicyDeniedError(PermissionError):
@@ -107,6 +108,21 @@ class PlatformError(OSError):
     code = PLATFORM_ERROR
 
 
+class PolicySourceError(OSError):
+    """The configured policy file could not be read, so nothing is allowed.
+
+    Kept apart from `PolicyDeniedError` on purpose: an unreadable file is a
+    broken probe, not an invalid policy, so it subclasses `OSError` and never
+    `PermissionError`. The message names the file, never its directory.
+    """
+
+    code = POLICY_SOURCE_UNAVAILABLE
+
+
+class PolicySourceMissingError(PolicySourceError, FileNotFoundError):
+    """The configured policy file does not exist."""
+
+
 # Every category above. Their messages are written for the MCP client (no
 # paths, no screen content), so the server forwards exactly these to the
 # client; any other exception reaches it only as a generic tool failure.
@@ -118,4 +134,5 @@ CATEGORY_ERRORS = (
     InputRejectedError,
     ActionTimeoutError,
     PlatformError,
+    PolicySourceError,
 )

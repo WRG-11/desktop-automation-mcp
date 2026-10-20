@@ -52,7 +52,7 @@ import re
 from datetime import datetime, timezone
 from pathlib import Path
 
-from .errors import PolicyDeniedError
+from .errors import PolicyDeniedError, PolicySourceError, PolicySourceMissingError
 
 # Mirrors the `allowed_actions` / `protected_actions` enum in
 # `schema/policy.schema.json`. Deliberately NOT imported from `policy.py`:
@@ -650,9 +650,10 @@ def load_policy_file(path: str) -> dict:
 
     Raises PermissionError (not ValueError) on ANY validation failure —
     a malformed or expired policy file must fail CLOSED, the same way a
-    missing env var does today. Raises OSError if the file cannot be read
-    at all (broken-probe != absence: if the file cannot be read, do not
-    confuse that with "invalid").
+    missing env var does today. Raises `PolicySourceError` (an OSError;
+    `PolicySourceMissingError` is also a FileNotFoundError) if the file
+    cannot be read at all (broken-probe != absence: if the file cannot be
+    read, do not confuse that with "invalid").
 
     Every error raised here reaches the MCP client through the ordinary
     policy-denial path, and the configured path usually sits under a user
@@ -671,9 +672,9 @@ def load_policy_file(path: str) -> dict:
             "tools/validate_policy.py on it for details"
         ) from None
     except FileNotFoundError:
-        raise FileNotFoundError(f"policy file not found ({label})") from None
+        raise PolicySourceMissingError(f"policy file not found ({label})") from None
     except OSError:
-        raise OSError(f"could not read policy file ({label})") from None
+        raise PolicySourceError(f"could not read policy file ({label})") from None
     problems = validate_policy_document(doc)
     if problems:
         raise PolicyDeniedError(
