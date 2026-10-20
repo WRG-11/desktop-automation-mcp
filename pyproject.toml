@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "desktop-automation-mcp"
 version = "0.2.0"
-description = "Deny-by-default, per-action-gated Windows window MCP server"
+description = "MCP server that operates only the Windows application windows named in a policy file, and refuses everything else."
 readme = "README.md"
 license = "Apache-2.0"
 requires-python = ">=3.12"

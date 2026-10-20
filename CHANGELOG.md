@@ -34,6 +34,9 @@ All notable user-visible changes are recorded here. This project follows
 
 - The README opens with a Notepad policy and the audit event of one refused
   action, both taken from `schema/examples/`, before the design rationale.
+- The package description in `pyproject.toml` now matches the README's
+  opening sentence and the repository description. It still read
+  "Deny-by-default, per-action-gated Windows window MCP server".
 - `SECURITY.md` names GitHub private vulnerability reporting as the
   reporting channel, now that it is enabled for this repository (it said
   the channel was unavailable), with email as the fallback. Supported
