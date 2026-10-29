@@ -67,9 +67,11 @@ validated against. A left-hand monitor makes the origin negative (e.g.
 
 Returns the center coordinates of a named `safe_regions` region in a
 [coordinate profile](configuration.md#coordinate-profiles) file. **Read-only, makes no
-Win32/screen calls** — it only reads and validates the profile file;
-it requires no action permission. An unknown `region_name` is rejected with an explicit error
-listing the existing region names.
+Win32/screen calls**: it only reads and validates the profile file.
+It requires the `observe` permission, checked before the file is opened. A profile that
+cannot be used (missing, unreadable, not JSON, invalid) is rejected with one message
+that names only the file; `tools/validate_coordinate_profile.py` gives the detail.
+An unknown `region_name` is rejected with an explicit error listing the existing region names.
 
 ### `check_coordinate_profile(profile_path, title_contains=None, hwnd=None)`
 

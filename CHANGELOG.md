@@ -5,7 +5,30 @@ All notable user-visible changes are recorded here. This project follows
 
 ## [Unreleased]
 
+### Security
+
+- `resolve_coordinate_profile_point` now requires the `observe` permission
+  and checks it before opening the file. It required none, so a server with
+  no policy at all still read any path a client named: the error told a
+  missing path from a directory from a non-JSON file, and for any JSON file
+  it listed the file's top-level field names.
+- Both profile tools report every unusable profile (missing, not a file,
+  unreadable, not JSON, invalid) with one message that names only the file
+  and points to `tools/validate_coordinate_profile.py`, as policy-file errors
+  already do. The message no longer contains the directory or anything read
+  from the file, and the chained exception that carried the path is dropped.
+
 ### Changed
+
+- A missing or unreadable policy file reaches the client again as
+  `policy file not found (<name>)` or `could not read policy file (<name>)`.
+  Under MCP 2.x both had become a bare `Error executing tool <name>`. The new
+  `PolicySourceError` category (`policy_source_unavailable`) carries them; it
+  subclasses `OSError`, and the missing-file case also `FileNotFoundError`,
+  so existing handlers keep matching.
+- `send_text` reads `DESKTOP_AUTOMATION_TEXT_MODE` before it consumes the
+  confirmation token. An invalid value used to spend the token and send
+  nothing.
 
 - The server now runs on the MCP Python SDK 2.x (`mcp>=2.3,<3`, verified with
   2.3.0); MCP 1.x is no longer supported. `FastMCP` became `MCPServer`.
@@ -34,6 +57,9 @@ All notable user-visible changes are recorded here. This project follows
 
 - The README opens with a Notepad policy and the audit event of one refused
   action, both taken from `schema/examples/`, before the design rationale.
+- The package description in `pyproject.toml` now matches the README's
+  opening sentence and the repository description. It still read
+  "Deny-by-default, per-action-gated Windows window MCP server".
 - `SECURITY.md` names GitHub private vulnerability reporting as the
   reporting channel, now that it is enabled for this repository (it said
   the channel was unavailable), with email as the fallback. Supported

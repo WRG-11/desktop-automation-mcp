@@ -11,6 +11,8 @@ from __future__ import annotations
 import ast
 import asyncio
 import inspect
+import json
+import os
 import sys
 import tempfile
 import unittest
@@ -29,6 +31,7 @@ from desktop_automation_mcp.errors import (
     MemoryBudgetExceededError,
     PlatformError,
     PolicyDeniedError,
+    PolicySourceError,
     TargetNotForegroundError,
     TargetOccludedError,
     TargetStaleError,
@@ -41,6 +44,15 @@ def _call(name: str, arguments: dict | None = None):
     return asyncio.run(server.mcp.call_tool(name, arguments or {}))
 
 
+def _policy_env(**overrides):
+    """Clears every server variable, then sets only the given ones."""
+    env = {
+        k: v for k, v in os.environ.items() if not k.startswith("DESKTOP_AUTOMATION_")
+    }
+    env.update(overrides)
+    return patch.dict(os.environ, env, clear=True)
+
+
 class CategoryErrorsReachTheClientTests(unittest.TestCase):
     def test_every_category_is_forwarded(self):
         expected = {
@@ -51,6 +63,7 @@ class CategoryErrorsReachTheClientTests(unittest.TestCase):
             InputRejectedError,
             ActionTimeoutError,
             PlatformError,
+            PolicySourceError,
         }
         self.assertEqual(set(CATEGORY_ERRORS), expected)
 
@@ -110,8 +123,50 @@ class ProfileLoadingForToolsTests(unittest.TestCase):
         self.assertIn("no-such-profile.json", str(ctx.exception))
 
     def test_resolve_tool_reports_a_missing_profile_as_input_error(self):
-        with self.assertRaises(InputRejectedError):
-            server.resolve_coordinate_profile_point("no-such-profile.json", "x")
+        with _policy_env(DESKTOP_AUTOMATION_ALLOWED_ACTIONS="observe"):
+            with self.assertRaises(InputRejectedError):
+                server.resolve_coordinate_profile_point("no-such-profile.json", "x")
+
+    def test_resolve_tool_requires_the_observe_permission(self):
+        with (
+            _policy_env(),
+            patch.object(server, "_load_profile_file") as load,
+        ):
+            with self.assertRaises(PolicyDeniedError):
+                server.resolve_coordinate_profile_point("profile.json", "x")
+        load.assert_not_called()
+
+    def test_profile_failures_share_one_message_without_directory_or_content(self):
+        marker = "marker-dir-7f3a"
+        with tempfile.TemporaryDirectory() as tmp:
+            base = Path(tmp) / marker
+            base.mkdir()
+            (base / "folder.json").mkdir()
+            (base / "plain.json").write_text("not json", encoding="utf-8")
+            (base / "empty.json").write_text("", encoding="utf-8")
+            (base / "foreign.json").write_text(
+                json.dumps({"aws_secret_access_key": "x"}), encoding="utf-8"
+            )
+            (base / "invalid.json").write_text("{}", encoding="utf-8")
+            for name in (
+                "absent.json",
+                "folder.json",
+                "plain.json",
+                "empty.json",
+                "foreign.json",
+                "invalid.json",
+            ):
+                with self.subTest(case=name):
+                    with self.assertRaises(InputRejectedError) as ctx:
+                        server._load_profile_for_tool(str(base / name))
+                    exc = ctx.exception
+                    self.assertEqual(
+                        str(exc),
+                        f"could not use coordinate profile ({name}); run "
+                        "tools/validate_coordinate_profile.py on it for details",
+                    )
+                    self.assertIsNone(exc.__cause__)
+                    self.assertTrue(exc.__suppress_context__)
 
     def test_every_tool_loads_profiles_through_the_tool_boundary(self):
         tree = ast.parse((_SRC / "server.py").read_text(encoding="utf-8"))
@@ -128,12 +183,43 @@ class ProfileLoadingForToolsTests(unittest.TestCase):
         ]
         self.assertEqual([node.name for node in callers], ["_load_profile_for_tool"])
 
-    def test_invalid_profile_content_stays_a_policy_denial(self):
+    def test_a_valid_profile_loads_through_the_tool_boundary(self):
+        profile = {"profile_id": "p"}
+        with patch.object(server, "_load_profile_file", return_value=profile):
+            self.assertIs(server._load_profile_for_tool("profile.json"), profile)
+
+
+class PolicySourceErrorsReachTheClientTests(unittest.TestCase):
+    """An unusable policy file reaches the client by file name only."""
+
+    def _assert_forwarded(self, policy_path: str, expected: str, marker: str):
+        with _policy_env(DESKTOP_AUTOMATION_POLICY_FILE=policy_path):
+            with self.assertRaises(ToolError) as ctx:
+                _call("list_windows")
+        self.assertNotIsInstance(ctx.exception, UnexpectedToolError)
+        self.assertIn(expected, str(ctx.exception))
+        self.assertNotIn(marker, str(ctx.exception))
+
+    def test_missing_policy_file(self):
         with tempfile.TemporaryDirectory() as tmp:
-            path = Path(tmp) / "profile.json"
-            path.write_text("{}", encoding="utf-8")
-            with self.assertRaises(PolicyDeniedError):
-                server._load_profile_for_tool(str(path))
+            marker = "marker-dir-1c9e"
+            path = Path(tmp) / marker / "missing-policy.yaml"
+            self._assert_forwarded(
+                str(path), "policy file not found (missing-policy.yaml)", marker
+            )
+
+    def test_unreadable_policy_path(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            marker = "marker-dir-5b20"
+            path = Path(tmp) / marker / "policy-dir"
+            path.mkdir(parents=True)
+            self._assert_forwarded(
+                str(path), "could not read policy file (policy-dir)", marker
+            )
+
+    def test_policy_source_errors_keep_their_builtin_types(self):
+        self.assertTrue(issubclass(PolicySourceError, OSError))
+        self.assertFalse(issubclass(PolicySourceError, PermissionError))
 
 
 class ConvertedRaiseSitesTests(unittest.TestCase):

@@ -1581,6 +1581,25 @@ class UnicodeInputTests(unittest.TestCase):
                 server.send_text(hwnd=42, text="Merhaba", confirmation_token="tok-1")
         send_unicode.assert_not_called()
 
+    def test_invalid_text_mode_is_rejected_before_the_token_is_consumed(self):
+        tgt = _target(title="Notepad")
+        with (
+            patch.dict(
+                os.environ,
+                {
+                    "DESKTOP_AUTOMATION_ALLOWED_ACTIONS": "text",
+                    "DESKTOP_AUTOMATION_TEXT_MODE": "bogus",
+                },
+            ),
+            patch.object(server, "_prepare_action_target", return_value=tgt),
+            patch.object(server, "consume_confirmation") as consume,
+            patch.object(server, "_send_unicode_text") as send_unicode,
+        ):
+            with self.assertRaises(ValueError):
+                server.send_text(hwnd=42, text="Merhaba", confirmation_token="tok-1")
+        consume.assert_not_called()
+        send_unicode.assert_not_called()
+
     def test_utf16_units_preserve_astral_characters(self):
         self.assertEqual(input_mod._utf16_code_units("A😀"), [0x0041, 0xD83D, 0xDE00])
 

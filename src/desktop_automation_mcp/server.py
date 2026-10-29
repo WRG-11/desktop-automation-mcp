@@ -324,19 +324,25 @@ def _tool() -> Callable:
 
 
 def _load_profile_for_tool(profile_path: str) -> dict:
-    """Load a caller-named coordinate profile; an unreadable file is input error.
+    """Load a caller-named coordinate profile; any failure is one input error.
 
     `coordinate_profile.load_profile_file` keeps its contract (`OSError` for
     an unreadable file, `PolicyDeniedError` for invalid content). The path is
-    the caller's own argument, so a missing or unreadable file is reported
-    back as `InputRejectedError` and the caller can correct it.
+    the caller's own argument and may name any file on the machine, so every
+    failure is reported with the same message naming only the file: telling
+    "missing" from "not JSON" from "invalid" would let a client probe which
+    paths exist, and the validator's messages quote the file's own field
+    names. `tools/validate_coordinate_profile.py` gives the operator the
+    detail. The chained cause is dropped because it carries the full path.
     """
     try:
         return _load_profile_file(profile_path)
-    except PermissionError:
-        raise
-    except OSError as exc:
-        raise InputRejectedError(str(exc)) from exc
+    except OSError:
+        label = os.path.basename(str(profile_path)) or "coordinate profile"
+        raise InputRejectedError(
+            f"could not use coordinate profile ({label}); run "
+            "tools/validate_coordinate_profile.py on it for details"
+        ) from None
 
 
 def _target_identity(target: TargetSnapshot) -> dict:
@@ -860,14 +866,16 @@ def resolve_coordinate_profile_point(profile_path: str, region_name: str) -> dic
     coordinate-profile file.
 
     Read-only, makes no Win32/screen calls — only reads the file and
-    validates it against the schema (`coordinate_profile.py`). For the
-    same reason as `health_check`, REQUIRES no action permission:
-    inspecting a profile is not access to any window. The returned
-    `(x, y)` is a window-relative RAW coordinate — this tool does not
-    click automatically; pass it to `click_window`/etc. manually. Raises
-    `PermissionError` if the profile is invalid or the region name is
+    validates it against the schema (`coordinate_profile.py`). Requires the
+    `observe` permission, checked before the file is opened: the path is
+    the caller's, so without a policy the server would read any file the
+    caller names. The returned `(x, y)` is a window-relative RAW
+    coordinate — this tool does not click automatically; pass it to
+    `click_window`/etc. manually. Raises `InputRejectedError` if the
+    profile cannot be used and `PermissionError` if the region name is
     unknown.
     """
+    _require_action(ACTION_OBSERVE)
     profile = _load_profile_for_tool(profile_path)
     x, y = _resolve_profile_point(profile, region_name)
     return {
@@ -2079,6 +2087,9 @@ def send_text(
         )
 
     def effect(target: TargetSnapshot, correlation_id: str) -> str:
+        # Read the transport first: a misconfigured mode must not consume
+        # the caller's confirmation token for text that is never sent.
+        text_mode = _text_mode()
         _text_rate_limiter.consume(
             target.process_path, len(text), MAX_TEXT_CHARS_PER_MINUTE
         )
@@ -2088,7 +2099,7 @@ def send_text(
                 "request_confirmation(action_class='text', ...)."
             )
         consume_confirmation(confirmation_token, _target_identity(target), ACTION_TEXT)
-        if _text_mode() == "unicode":
+        if text_mode == "unicode":
             _send_unicode_text(target, text)
             return (
                 f"Text input events sent; visibility in the target control "
